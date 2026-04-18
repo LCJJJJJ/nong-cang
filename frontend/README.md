@@ -38,11 +38,28 @@ frontend/
 │  │  └─ images/
 │  ├─ components/
 │  ├─ features/
+│  │  ├─ auth/
+│  │  │  ├─ api.ts               # 登录、当前用户接口
+│  │  │  ├─ storage.ts           # token 和用户信息本地存储
+│  │  │  ├─ GuestOnlyRoute.tsx
+│  │  │  ├─ RequireAuth.tsx
+│  │  │  └─ types.ts
 │  │  └─ system/
 │  │     ├─ api.ts               # system 示例接口
 │  │     └─ types.ts             # system 示例类型
 │  ├─ hooks/
+│  ├─ layouts/
+│  │  ├─ auth/
+│  │  │  ├─ AuthLayout.tsx
+│  │  │  └─ AuthLayout.css
+│  │  └─ main/
+│  │     ├─ MainLayout.tsx
+│  │     └─ MainLayout.css
 │  ├─ pages/
+│  │  ├─ auth/
+│  │  │  └─ login/
+│  │  │     ├─ LoginPage.css
+│  │  │     └─ LoginPage.tsx
 │  │  └─ home/
 │  │     ├─ HomePage.css
 │  │     └─ HomePage.tsx
@@ -143,16 +160,39 @@ frontend/
 - `vite.config.ts` 已将 `/api` 代理到 `http://localhost:8080`
 - 如需覆盖后端地址，可配置 `VITE_API_BASE_URL`
 
+## 登录态与刷新策略
+
+前端当前采用本地存储 + Axios 自动续期方案：
+
+- 登录成功后，把 `accessToken`、`refreshToken` 和当前用户信息写入 `localStorage`
+- 应用启动时，如果本地已有会话，会先请求 `GET /api/auth/me` 校验登录态有效性
+- `Main Layout` 通过 `RequireAuth` 保护，没有 token 时自动回到 `/login`
+- `Auth Layout` 通过 `GuestOnlyRoute` 限制，已经有登录态时不会再停留在登录页
+- Axios 请求会自动带上 `Authorization: Bearer <accessToken>`
+- 如果普通业务请求返回 `401`，且本地仍有 `refreshToken`，前端会自动调用 `/api/auth/refresh`
+- 刷新成功后自动重放原请求
+- 刷新失败后清空本地登录态并跳回 `/login`
+
+当前演示账号：
+
+- 账号：`admin`
+- 手机号：`13800000000`
+- 密码：`Admin@123456`
+
 ## 当前骨架示例
 
 首页已经接入一套完整示例：
 
+- 登录页调用 `POST /api/auth/login`
+- 登录后访问受保护的 Main Layout
 - 页面加载时调用 `GET /api/system/ping`
 - 表单提交时调用 `POST /api/system/echo`
 - 点击演示按钮时调用 `GET /api/system/business-error`
 
-这三个示例分别覆盖：
+这些示例分别覆盖：
 
+- 登录成功与本地 token 持久化
+- AccessToken 自动携带与刷新
 - 成功响应
 - 参数校验失败
 - 业务异常失败

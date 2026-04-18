@@ -1,11 +1,15 @@
 package com.nongcang.server.modules.system.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,9 +25,12 @@ class SystemDemoControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	@Test
 	void shouldReturnUnifiedSuccessResponse() throws Exception {
-		mockMvc.perform(get("/api/system/ping"))
+		mockMvc.perform(get("/api/system/ping").header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andDo(print())
 				.andExpect(status().isOk())
 				.andExpect(header().exists("X-Trace-Id"))
@@ -37,11 +44,14 @@ class SystemDemoControllerTests {
 
 	@Test
 	void shouldReturnValidationErrorResponse() throws Exception {
-		mockMvc.perform(post("/api/system/echo").contentType(MediaType.APPLICATION_JSON).content("""
-				{
-				  "content": ""
-				}
-				"""))
+		mockMvc.perform(post("/api/system/echo")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+					{
+					  "content": ""
+					}
+					"""))
 				.andDo(print())
 				.andExpect(status().isUnprocessableEntity())
 				.andExpect(jsonPath("$.success").value(false))
@@ -51,7 +61,7 @@ class SystemDemoControllerTests {
 
 	@Test
 	void shouldReturnBusinessErrorResponse() throws Exception {
-		mockMvc.perform(get("/api/system/business-error"))
+		mockMvc.perform(get("/api/system/business-error").header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andDo(print())
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.success").value(false))
@@ -61,11 +71,27 @@ class SystemDemoControllerTests {
 
 	@Test
 	void shouldReturnUnifiedNotFoundResponse() throws Exception {
-		mockMvc.perform(get("/api/system/not-found"))
+		mockMvc.perform(get("/api/system/not-found").header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andDo(print())
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
 				.andExpect(jsonPath("$.message").value("请求的资源不存在"));
+	}
+
+	private String bearerToken() throws Exception {
+		MvcResult mvcResult = mockMvc.perform(post("/api/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "account": "admin",
+							  "password": "Admin@123456"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		JsonNode jsonNode = objectMapper.readTree(mvcResult.getResponse().getContentAsString());
+		return "Bearer " + jsonNode.path("data").path("accessToken").asText();
 	}
 }

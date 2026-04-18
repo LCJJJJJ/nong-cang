@@ -33,22 +33,13 @@
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  background: rgba(255, 252, 247, 0.92);
 }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(60, 122, 83, 0.14), transparent 30%),
-    linear-gradient(180deg, #f4efe5, #f7f4ee);
+  min-height: 100vh;
+  background: #f7f4ee;
 }
 
 *,
@@ -103,4 +94,19 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+a {
+  color: inherit;
+}
+
+.auth-route-placeholder {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-h);
+  background:
+    radial-gradient(circle at top left, rgba(60, 122, 83, 0.14), transparent 30%),
+    linear-gradient(180deg, #f4efe5, #f7f4ee);
 }

@@ -31,6 +31,12 @@ server/
 │  │  │  │  └─ trace/               # traceId 上下文与过滤器
 │  │  │  ├─ config/                 # Jackson、MVC 等全局配置
 │  │  │  └─ modules/
+│  │  │     ├─ auth/
+│  │  │     │  ├─ controller/
+│  │  │     │  ├─ domain/
+│  │  │     │  │  ├─ dto/
+│  │  │     │  │  └─ vo/
+│  │  │     │  └─ service/
 │  │  │     └─ system/
 │  │  │        ├─ controller/
 │  │  │        ├─ domain/
@@ -96,6 +102,8 @@ server/
 - 常规业务异常统一返回
 - 参数校验异常统一返回
 - 路由不存在或资源不存在统一返回 `RESOURCE_NOT_FOUND`
+- Spring Security 认证失败统一返回 `401`
+- 权限不足统一返回 `403`
 
 ## HTTP 状态码约定
 
@@ -142,8 +150,8 @@ server/
 
 当前 `401/403` 的落地方式：
 
-- 未接入鉴权框架前，可通过 `BusinessException(CommonErrorCode.UNAUTHORIZED / FORBIDDEN)` 直接返回统一错误体
-- 后续接入 Spring Security 时，再把认证与授权异常统一适配到同一响应结构
+- 当前已接入 Spring Security，无 token、无效 token、刷新失败等认证问题会统一返回标准错误体
+- 权限不足会统一返回标准 `403` 响应体
 
 统一落点：
 
@@ -176,7 +184,11 @@ src/main/java/com/nongcang/server/modules/order/
 
 ## 当前示例模块
 
-当前已落了一个 `modules/system` 示例模块，用来演示：
+当前已落了 `modules/auth` 和 `modules/system` 两个示例模块，用来演示：
+
+- 登录：`POST /api/auth/login`
+- 刷新：`POST /api/auth/refresh`
+- 当前用户：`GET /api/auth/me`
 
 - 成功响应：`GET /api/system/ping`
 - 参数校验失败：`POST /api/system/echo`
@@ -184,3 +196,22 @@ src/main/java/com/nongcang/server/modules/order/
 - 路由不存在统一响应：任意不存在的 `/api/**` 路径
 
 后续新增真实业务时，按这个模块结构继续扩展即可。
+
+## 登录态方案
+
+当前项目采用双 Token 方案：
+
+- AccessToken：短期有效，放在 `Authorization: Bearer <token>` 请求头中
+- RefreshToken：长期有效，用于 AccessToken 过期后的续期
+
+后端约定：
+
+- 登录成功同时签发 `accessToken` 和 `refreshToken`
+- 刷新接口验证 `refreshToken` 后重新签发一对新 token
+- 除 `POST /api/auth/login` 和 `POST /api/auth/refresh` 外，其他 `/api/**` 默认需要认证
+
+当前演示账号：
+
+- 账号：`admin`
+- 手机号：`13800000000`
+- 密码：`Admin@123456`
