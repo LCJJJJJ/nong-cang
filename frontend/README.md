@@ -1,73 +1,86 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+基于 `Vite + React + TypeScript` 的前端项目。
 
-Currently, two official plugins are available:
+## 启动命令
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `pnpm dev`：启动开发环境
+- `pnpm build`：执行 TypeScript 编译并构建生产包
+- `pnpm lint`：执行 ESLint 检查
+- `pnpm preview`：预览生产构建结果
 
-## React Compiler
+## 目录组织原则
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+当前采用 React 项目里最常见、也最容易长期维护的一种混合分层方案：
 
-## Expanding the ESLint configuration
+- `app`：应用级入口、全局样式、Provider、路由装配
+- `pages`：路由页面，只负责页面编排，不堆业务细节
+- `features`：按业务领域拆分的功能模块，后续优先往这里增长
+- `components`：跨页面复用的共享组件
+- `api`：Axios 实例、拦截器、接口模块
+- `hooks`：跨业务复用的 React Hooks
+- `types`：共享 TypeScript 类型
+- `utils`：纯函数工具
+- `assets`：图片、图标等静态资源
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+这套结构兼顾了两个目标：
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- 小项目阶段不会被过度设计拖慢
+- 业务变大后可以自然演进到按 `feature` 拆分，而不是把所有代码堆在 `components` 或 `utils` 里
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 当前目录结构
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+frontend/
+├─ public/                      # 不经过打包导入、按原路径输出的静态资源
+├─ src/
+│  ├─ api/                      # 请求层：Axios 实例、接口模块、拦截器
+│  ├─ app/                      # 应用装配层
+│  │  ├─ App.tsx
+│  │  └─ styles/
+│  │     └─ index.css
+│  ├─ assets/                   # 由代码导入的静态资源
+│  │  └─ images/
+│  │     ├─ hero.png
+│  │     ├─ react.svg
+│  │     └─ vite.svg
+│  ├─ components/               # 共享组件
+│  ├─ features/                 # 业务模块
+│  ├─ hooks/                    # 通用 Hooks
+│  ├─ pages/                    # 路由页面
+│  │  └─ home/
+│  │     ├─ HomePage.css
+│  │     └─ HomePage.tsx
+│  ├─ types/                    # 共享类型
+│  ├─ utils/                    # 工具函数
+│  └─ main.tsx                  # 前端入口
+├─ index.html
+├─ package.json
+├─ tsconfig.app.json
+├─ tsconfig.json
+├─ tsconfig.node.json
+└─ vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 推荐的放置约定
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- 新页面放到 `src/pages/<page-name>/`
+- 新业务功能优先放到 `src/features/<feature-name>/`
+- 只有跨多个页面复用的 UI 组件才放到 `src/components/`
+- 接口请求统一从 `src/api/` 发起，不在页面里直接写 Axios 细节
+- 页面只负责编排，业务逻辑逐步下沉到 `features`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 业务增长后的推荐形态
+
+当某个业务模块开始变大时，推荐按下面的形式继续拆：
+
+```text
+src/features/auth/
+├─ api/
+├─ components/
+├─ hooks/
+├─ types.ts
+└─ utils.ts
 ```
+
+这样可以让页面层保持薄，业务边界更稳定，后续多人协作也更容易。
