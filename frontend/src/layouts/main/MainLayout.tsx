@@ -41,7 +41,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '产品分类管理', path: '/' },
       { label: '产品档案管理' },
-      { label: '产品单位管理' },
+      { label: '产品单位管理', path: '/product-units' },
       { label: '产地信息管理' },
       { label: '储存条件管理', path: '/storage-conditions' },
       { label: '保质期规则管理' },
@@ -92,6 +92,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '储存条件管理',
     description:
       '维护仓内存放环境与作业规则，为产品分类、产品档案和预警模块提供统一标准。',
+  },
+  '/product-units': {
+    title: '产品单位管理',
+    description:
+      '维护农产品通用计量单位，统一产品档案和后续出入库、库存业务的单位口径。',
   },
 }
 

@@ -7,6 +7,7 @@ import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
+import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route element={<RequireAuth />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
           </Route>
           </Route>
