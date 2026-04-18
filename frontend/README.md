@@ -1,6 +1,6 @@
 # Frontend
 
-基于 `Vite + React + TypeScript` 的前端项目。
+基于 `Vite + React + TypeScript + Axios` 的前端项目。
 
 ## 启动命令
 
@@ -11,50 +11,44 @@
 
 ## 目录组织原则
 
-当前采用 React 项目里最常见、也最容易长期维护的一种混合分层方案：
+前端采用一套兼顾效率和可维护性的混合分层方案：
 
-- `app`：应用级入口、全局样式、Provider、路由装配
-- `pages`：路由页面，只负责页面编排，不堆业务细节
-- `features`：按业务领域拆分的功能模块，后续优先往这里增长
-- `components`：跨页面复用的共享组件
-- `api`：Axios 实例、拦截器、接口模块
-- `hooks`：跨业务复用的 React Hooks
-- `types`：共享 TypeScript 类型
-- `utils`：纯函数工具
-- `assets`：图片、图标等静态资源
-
-这套结构兼顾了两个目标：
-
-- 小项目阶段不会被过度设计拖慢
-- 业务变大后可以自然演进到按 `feature` 拆分，而不是把所有代码堆在 `components` 或 `utils` 里
+- `app`：应用入口、全局样式、后续路由与 Provider 装配
+- `api`：统一响应契约、Axios 实例、错误归一化
+- `pages`：页面编排层
+- `features`：业务模块层，每个模块自带自己的类型和 API
+- `components`：跨页面共享的 UI 组件
+- `hooks / utils / types`：通用能力
 
 ## 当前目录结构
 
 ```text
 frontend/
-├─ public/                      # 不经过打包导入、按原路径输出的静态资源
+├─ public/
 ├─ src/
-│  ├─ api/                      # 请求层：Axios 实例、接口模块、拦截器
-│  ├─ app/                      # 应用装配层
+│  ├─ api/
+│  │  ├─ contracts.ts            # 统一响应、分页、字段错误类型
+│  │  ├─ errors.ts               # AppError 与错误归一化
+│  │  └─ http.ts                 # Axios 实例与 request<T>()
+│  ├─ app/
 │  │  ├─ App.tsx
 │  │  └─ styles/
 │  │     └─ index.css
-│  ├─ assets/                   # 由代码导入的静态资源
+│  ├─ assets/
 │  │  └─ images/
-│  │     ├─ hero.png
-│  │     ├─ react.svg
-│  │     └─ vite.svg
-│  ├─ components/               # 共享组件
-│  ├─ features/                 # 业务模块
-│  ├─ hooks/                    # 通用 Hooks
-│  ├─ pages/                    # 路由页面
+│  ├─ components/
+│  ├─ features/
+│  │  └─ system/
+│  │     ├─ api.ts               # system 示例接口
+│  │     └─ types.ts             # system 示例类型
+│  ├─ hooks/
+│  ├─ pages/
 │  │  └─ home/
 │  │     ├─ HomePage.css
 │  │     └─ HomePage.tsx
-│  ├─ types/                    # 共享类型
-│  ├─ utils/                    # 工具函数
-│  └─ main.tsx                  # 前端入口
-├─ index.html
+│  ├─ types/
+│  ├─ utils/
+│  └─ main.tsx
 ├─ package.json
 ├─ tsconfig.app.json
 ├─ tsconfig.json
@@ -62,25 +56,105 @@ frontend/
 └─ vite.config.ts
 ```
 
-## 推荐的放置约定
+## 与后端统一的接口契约
 
-- 新页面放到 `src/pages/<page-name>/`
-- 新业务功能优先放到 `src/features/<feature-name>/`
-- 只有跨多个页面复用的 UI 组件才放到 `src/components/`
-- 接口请求统一从 `src/api/` 发起，不在页面里直接写 Axios 细节
-- 页面只负责编排，业务逻辑逐步下沉到 `features`
+默认所有普通 JSON 接口都符合下面的后端响应结构：
 
-## 业务增长后的推荐形态
-
-当某个业务模块开始变大时，推荐按下面的形式继续拆：
-
-```text
-src/features/auth/
-├─ api/
-├─ components/
-├─ hooks/
-├─ types.ts
-└─ utils.ts
+```json
+{
+  "success": true,
+  "code": "OK",
+  "message": "操作成功",
+  "data": {},
+  "errors": null,
+  "traceId": "4ab5d06d2d484ef89b7e3d57569a3f26"
+}
 ```
 
-这样可以让页面层保持薄，业务边界更稳定，后续多人协作也更容易。
+失败时：
+
+```json
+{
+  "success": false,
+  "code": "VALIDATION_FAILED",
+  "message": "请求参数校验失败",
+  "data": null,
+  "errors": [
+    {
+      "field": "content",
+      "message": "内容不能为空"
+    }
+  ],
+  "traceId": "4ab5d06d2d484ef89b7e3d57569a3f26"
+}
+```
+
+前端统一约定：
+
+- 逻辑判断只依赖 `code`
+- 用户展示优先使用 `message`
+- 字段级校验失败从 `errors` 中取值
+- 排障时展示 `traceId`
+
+## 请求层规范
+
+统一请求入口在 `src/api/http.ts`：
+
+- `request<T>()` 负责发请求并自动解包 `ApiResponse<T>`
+- 成功时直接返回 `data`
+- 失败时统一抛出 `AppError`
+- 同时兼容 `204 No Content` 这类空响应成功场景
+
+不要在页面里直接写 `axios.get(...)`。页面和组件只调用 `features/<feature>/api.ts` 里的函数。
+
+## 类型组织规范
+
+- 全局接口契约类型放 `src/api/contracts.ts`
+- 模块类型放 `src/features/<feature>/types.ts`
+- 页面不要自己临时声明接口返回类型
+
+统一约束：
+
+- 后端主键如果是 `Long`，前端一律按字符串处理
+- 当前示例接口里的 `demoId` 已按字符串返回，可直接作为联调参考
+- 时间字段统一按字符串处理
+- 列表没数据时按空数组处理
+
+## 错误处理规范
+
+统一错误收口在 `src/api/errors.ts`：
+
+- 网络异常：提示“网络连接失败，请检查后端服务是否可用”
+- `401`：提示“登录已失效，请重新登录”
+- `403`：提示“当前账号无权执行该操作”
+- `5xx`：提示“系统繁忙，请稍后再试”
+- 业务错误：优先展示后端返回的 `message`
+
+页面层反馈规则：
+
+- 表单提交失败并且有字段错误：显示到具体表单项
+- 普通操作失败：显示错误卡片或 toast
+- 页面首次加载失败：显示错误态和重试操作
+- 所有异常都可以展示 `traceId` 便于排查
+
+## 本地联调约定
+
+- Axios 默认请求前缀是 `/api`
+- `vite.config.ts` 已将 `/api` 代理到 `http://localhost:8080`
+- 如需覆盖后端地址，可配置 `VITE_API_BASE_URL`
+
+## 当前骨架示例
+
+首页已经接入一套完整示例：
+
+- 页面加载时调用 `GET /api/system/ping`
+- 表单提交时调用 `POST /api/system/echo`
+- 点击演示按钮时调用 `GET /api/system/business-error`
+
+这三个示例分别覆盖：
+
+- 成功响应
+- 参数校验失败
+- 业务异常失败
+
+后续新增真实业务时，直接按 `features/<feature>/api.ts + types.ts` 的模式继续扩展即可。
