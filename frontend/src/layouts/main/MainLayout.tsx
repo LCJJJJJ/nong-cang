@@ -45,7 +45,7 @@ const navigationSections: NavigationSection[] = [
       { label: '产地信息管理', path: '/product-origins' },
       { label: '储存条件管理', path: '/storage-conditions' },
       { label: '保质期规则管理' },
-      { label: '品质等级管理' },
+      { label: '品质等级管理', path: '/quality-grades' },
     ],
   },
   {
@@ -102,6 +102,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '产地信息管理',
     description:
       '维护标准产地信息，为产品档案、质量追溯和统计分析提供统一产地口径。',
+  },
+  '/quality-grades': {
+    title: '品质等级管理',
+    description:
+      '维护统一品质等级口径，为产品档案、质检与损耗分析提供标准等级规则。',
   },
 }
 
