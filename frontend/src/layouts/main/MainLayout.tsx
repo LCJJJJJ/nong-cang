@@ -18,6 +18,7 @@ type SidebarIconName =
 
 interface NavigationChildItem {
   label: string
+  path?: string
   active?: boolean
 }
 
@@ -38,11 +39,11 @@ const navigationSections: NavigationSection[] = [
     icon: 'leaf',
     expanded: true,
     children: [
-      { label: '产品分类管理', active: true },
+      { label: '产品分类管理', path: '/' },
       { label: '产品档案管理' },
       { label: '产品单位管理' },
       { label: '产地信息管理' },
-      { label: '储存条件管理' },
+      { label: '储存条件管理', path: '/storage-conditions' },
       { label: '保质期规则管理' },
       { label: '品质等级管理' },
     ],
@@ -87,6 +88,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     description:
       '管理农产品的主分类与子分类体系，设置默认储存环境标准以确保数据一致性。',
   },
+  '/storage-conditions': {
+    title: '储存条件管理',
+    description:
+      '维护仓内存放环境与作业规则，为产品分类、产品档案和预警模块提供统一标准。',
+  },
 }
 
 function MainLayout() {
@@ -111,11 +117,16 @@ function MainLayout() {
     () =>
       navigationSections.map((section) => ({
         ...section,
+        children: section.children?.map((child) => ({
+          ...child,
+          active: child.path === location.pathname,
+        })),
         isExpanded: section.children?.length
-          ? Boolean(expandedSections[section.label])
+          ? Boolean(expandedSections[section.label]) ||
+            Boolean(section.children?.some((child) => child.path === location.pathname))
           : false,
       })),
-    [expandedSections],
+    [expandedSections, location.pathname],
   )
 
   const handleLogout = () => {
@@ -195,6 +206,11 @@ function MainLayout() {
                       className={`main-layout__submenu-item${
                         child.active ? ' is-active' : ''
                       }`}
+                      onClick={() => {
+                        if (child.path) {
+                          navigate(child.path)
+                        }
+                      }}
                     >
                       {child.label}
                     </button>
@@ -252,10 +268,21 @@ function MainLayout() {
         </header>
 
         <div className="main-layout__mobile-tabs" aria-label="移动端菜单">
-          <button type="button" className="is-active">
+          <button
+            type="button"
+            className={location.pathname === '/' ? 'is-active' : ''}
+            onClick={() => navigate('/')}
+          >
             产品分类管理
           </button>
           <button type="button">产品档案管理</button>
+          <button
+            type="button"
+            className={location.pathname === '/storage-conditions' ? 'is-active' : ''}
+            onClick={() => navigate('/storage-conditions')}
+          >
+            储存条件管理
+          </button>
           <button type="button">仓库管理</button>
           <button type="button">库存管理</button>
         </div>
