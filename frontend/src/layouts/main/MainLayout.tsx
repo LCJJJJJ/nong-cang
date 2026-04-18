@@ -130,12 +130,17 @@ function MainLayout() {
     }))
   }
 
+  const displayName = resolveDisplayName(user?.displayName)
+  const loginName = resolveLoginName(user?.username)
+
   return (
     <div className="main-layout">
       <aside className="main-layout__sidebar">
         <div className="main-layout__brand">
-          <div className="main-layout__brand-mark">
-            <span aria-hidden="true">▣</span>
+          <div className="main-layout__brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-4v-6H8v6H4a1 1 0 0 1-1-1v-9.5Z" />
+            </svg>
           </div>
           <div>
             <h1>Alpha仓储</h1>
@@ -211,20 +216,28 @@ function MainLayout() {
           </div>
 
           <div className="main-layout__topbar-actions">
-            <button type="button" className="main-layout__icon-button" aria-label="通知">
-              <SidebarIcon name="bell" />
+            <button
+              type="button"
+              className="main-layout__icon-button"
+              aria-label="通知"
+            >
+              <TopbarIcon name="bell" />
             </button>
-            <button type="button" className="main-layout__icon-button" aria-label="设置">
-              <SidebarIcon name="settings" />
+            <button
+              type="button"
+              className="main-layout__icon-button"
+              aria-label="设置"
+            >
+              <TopbarIcon name="settings" />
             </button>
 
             <div className="main-layout__user">
               <div className="main-layout__avatar" aria-hidden="true">
-                {user?.displayName.slice(0, 1) ?? 'A'}
+                <TopbarIcon name="avatar" />
               </div>
               <div className="main-layout__user-copy">
-                <strong>{user?.displayName ?? '管理员'}</strong>
-                <span>{user?.username ?? 'admin'}</span>
+                <strong>{displayName}</strong>
+                <span>{loginName}</span>
               </div>
             </div>
 
@@ -255,10 +268,10 @@ function MainLayout() {
   )
 }
 
-function SidebarIcon({ name }: { name: SidebarIconName | 'bell' | 'settings' }) {
-  const paths: Record<string, string> = {
+function SidebarIcon({ name }: { name: SidebarIconName }) {
+  const paths: Record<SidebarIconName, string> = {
     user: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z',
-    leaf: 'M12 3c-3 2.2-4.5 5-4.5 8.4 0 4.3 3 7.7 7.2 9.1.5.1.8-.3.8-.8v-4.1c0-2.9 1.7-5.7 4.6-7.2-1.2-2.4-3.3-4.2-6.1-5.4Z',
+    leaf: 'M18.94 4.94c-4.3-.3-7.41.87-9.5 2.96-2.9 2.9-2.74 6.98-2.34 8.93l-2.8 2.8 1.41 1.41 2.81-2.81c1.95.39 6.02.56 8.92-2.34 2.1-2.09 3.27-5.2 2.97-9.5l-.05-.69-.69-.05Z',
     warehouse:
       'M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-4v-6H8v6H4a1 1 0 0 1-1-1v-9.5Z',
     group:
@@ -273,10 +286,6 @@ function SidebarIcon({ name }: { name: SidebarIconName | 'bell' | 'settings' }) 
       'M12 4 2 20h20L12 4Zm1 11h-2v-4h2v4Zm0 4h-2v-2h2v2Z',
     chart:
       'M5 19h14v2H3V5h2v14Zm2-4h2v4H7v-4Zm4-6h2v10h-2V9Zm4 3h2v7h-2v-7Z',
-    bell:
-      'M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-6v-5a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z',
-    settings:
-      'm19.14 12.94.04-.94-.04-.94 2.03-1.58-1.92-3.32-2.39.96a7.54 7.54 0 0 0-1.63-.94L14.96 2h-3.92l-.27 2.18c-.58.22-1.12.53-1.63.94l-2.39-.96L4.83 7.48l2.03 1.58-.04.94.04.94-2.03 1.58 1.92 3.32 2.39-.96c.5.41 1.05.72 1.63.94L11.04 22h3.92l.27-2.18c.58-.22 1.12-.53 1.63-.94l2.39.96 1.92-3.32-2.03-1.58ZM13 15h-2a3 3 0 1 1 2-6 3 3 0 0 1 0 6Z',
   }
 
   return (
@@ -286,6 +295,45 @@ function SidebarIcon({ name }: { name: SidebarIconName | 'bell' | 'settings' }) 
       </svg>
     </span>
   )
+}
+
+function TopbarIcon({ name }: { name: 'bell' | 'settings' | 'avatar' }) {
+  const paths: Record<'bell' | 'settings' | 'avatar', string> = {
+    bell:
+      'M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-6v-5a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z',
+    settings:
+      'm19.14 12.94.04-.94-.04-.94 2.03-1.58-1.92-3.32-2.39.96a7.54 7.54 0 0 0-1.63-.94L14.96 2h-3.92l-.27 2.18c-.58.22-1.12.53-1.63.94l-2.39-.96L4.83 7.48l2.03 1.58-.04.94.04.94-2.03 1.58 1.92 3.32 2.39-.96c.5.41 1.05.72 1.63.94L11.04 22h3.92l.27-2.18c.58-.22 1.12-.53 1.63-.94l2.39.96 1.92-3.32-2.03-1.58ZM13 15h-2a3 3 0 1 1 2-6 3 3 0 0 1 0 6Z',
+    avatar:
+      'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z',
+  }
+
+  return (
+    <span className="main-layout__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d={paths[name]} />
+      </svg>
+    </span>
+  )
+}
+
+function resolveDisplayName(name?: string | null) {
+  if (!name || isBrokenText(name)) {
+    return '系统管理员'
+  }
+
+  return name
+}
+
+function resolveLoginName(username?: string | null) {
+  if (!username || isBrokenText(username)) {
+    return 'admin'
+  }
+
+  return username
+}
+
+function isBrokenText(value: string) {
+  return /�|Ã|Â|ð|ï|æ|å/.test(value)
 }
 
 export default MainLayout

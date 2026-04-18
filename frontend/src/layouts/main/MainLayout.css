@@ -37,7 +37,12 @@
   justify-content: center;
   background: #e1e3e4;
   color: #006d37;
-  font-size: 18px;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+  }
 }
 
 .main-layout__brand h1 {
@@ -258,8 +263,6 @@
   justify-content: center;
   background: #e1e3e4;
   color: #191c1d;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .main-layout__user-copy {
