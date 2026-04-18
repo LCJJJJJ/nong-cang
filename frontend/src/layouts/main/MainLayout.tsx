@@ -40,7 +40,7 @@ const navigationSections: NavigationSection[] = [
     expanded: true,
     children: [
       { label: '产品分类管理', path: '/' },
-      { label: '产品档案管理' },
+      { label: '产品档案管理', path: '/product-archives' },
       { label: '产品单位管理', path: '/product-units' },
       { label: '产地信息管理', path: '/product-origins' },
       { label: '储存条件管理', path: '/storage-conditions' },
@@ -87,6 +87,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '产品分类管理',
     description:
       '管理农产品的主分类与子分类体系，设置默认储存环境标准以确保数据一致性。',
+  },
+  '/product-archives': {
+    title: '产品档案管理',
+    description:
+      '维护农产品主数据档案，统一挂接分类、单位、产地、储存条件、保质期规则和品质等级。',
   },
   '/storage-conditions': {
     title: '储存条件管理',

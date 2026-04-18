@@ -160,6 +160,10 @@ public class CategoryService {
 			throw new BusinessException(CommonErrorCode.CATEGORY_HAS_CHILDREN);
 		}
 
+		if (categoryRepository.countProductArchiveReferences(id) > 0) {
+			throw new BusinessException(CommonErrorCode.CATEGORY_IN_USE);
+		}
+
 		categoryRepository.deleteById(id);
 	}
 

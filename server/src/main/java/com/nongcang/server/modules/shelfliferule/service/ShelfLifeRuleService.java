@@ -134,6 +134,11 @@ public class ShelfLifeRuleService {
 	@Transactional
 	public void deleteShelfLifeRule(Long id) {
 		getExistingShelfLifeRule(id);
+
+		if (shelfLifeRuleRepository.countProductArchiveReferences(id) > 0) {
+			throw new BusinessException(CommonErrorCode.SHELF_LIFE_RULE_IN_USE);
+		}
+
 		shelfLifeRuleRepository.deleteById(id);
 	}
 

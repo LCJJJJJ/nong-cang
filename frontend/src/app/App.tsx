@@ -7,6 +7,7 @@ import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
+import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
@@ -27,6 +28,7 @@ function App() {
           <Route element={<RequireAuth />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
+            <Route path="/product-archives" element={<ProductArchivePage />} />
             <Route path="/product-origins" element={<ProductOriginPage />} />
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />

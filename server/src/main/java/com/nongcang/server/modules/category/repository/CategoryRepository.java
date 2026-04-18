@@ -213,6 +213,15 @@ public class CategoryRepository {
 				SELECT COUNT(1)
 				FROM product_category
 				WHERE parent_id = :id
+		""", new MapSqlParameterSource("id", id), Long.class);
+		return count == null ? 0L : count;
+	}
+
+	public long countProductArchiveReferences(Long id) {
+		Long count = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM product_archive
+				WHERE category_id = :id
 				""", new MapSqlParameterSource("id", id), Long.class);
 		return count == null ? 0L : count;
 	}

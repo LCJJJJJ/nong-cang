@@ -178,6 +178,15 @@ public class ShelfLifeRuleRepository {
 				""", new MapSqlParameterSource("id", id));
 	}
 
+	public long countProductArchiveReferences(Long id) {
+		Long count = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM product_archive
+				WHERE shelf_life_rule_id = :id
+				""", new MapSqlParameterSource("id", id), Long.class);
+		return count == null ? 0L : count;
+	}
+
 	private MapSqlParameterSource buildParameters(ShelfLifeRuleEntity shelfLifeRuleEntity) {
 		return new MapSqlParameterSource()
 				.addValue("ruleCode", shelfLifeRuleEntity.ruleCode())

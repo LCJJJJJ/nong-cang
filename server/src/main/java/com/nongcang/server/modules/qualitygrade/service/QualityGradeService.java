@@ -112,6 +112,11 @@ public class QualityGradeService {
 	@Transactional
 	public void deleteQualityGrade(Long id) {
 		getExistingQualityGrade(id);
+
+		if (qualityGradeRepository.countProductArchiveReferences(id) > 0) {
+			throw new BusinessException(CommonErrorCode.QUALITY_GRADE_IN_USE);
+		}
+
 		qualityGradeRepository.deleteById(id);
 	}
 

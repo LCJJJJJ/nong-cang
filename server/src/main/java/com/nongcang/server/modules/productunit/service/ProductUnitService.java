@@ -112,6 +112,11 @@ public class ProductUnitService {
 	@Transactional
 	public void deleteProductUnit(Long id) {
 		getExistingProductUnit(id);
+
+		if (productUnitRepository.countProductArchiveReferences(id) > 0) {
+			throw new BusinessException(CommonErrorCode.PRODUCT_UNIT_IN_USE);
+		}
+
 		productUnitRepository.deleteById(id);
 	}
 

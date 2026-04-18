@@ -151,6 +151,15 @@ public class ProductOriginRepository {
 				""", new MapSqlParameterSource("id", id));
 	}
 
+	public long countProductArchiveReferences(Long id) {
+		Long count = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM product_archive
+				WHERE origin_id = :id
+				""", new MapSqlParameterSource("id", id), Long.class);
+		return count == null ? 0L : count;
+	}
+
 	private MapSqlParameterSource buildParameters(ProductOriginEntity productOriginEntity) {
 		return new MapSqlParameterSource()
 				.addValue("originCode", productOriginEntity.originCode())

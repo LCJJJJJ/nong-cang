@@ -112,6 +112,11 @@ public class ProductOriginService {
 	@Transactional
 	public void deleteProductOrigin(Long id) {
 		getExistingProductOrigin(id);
+
+		if (productOriginRepository.countProductArchiveReferences(id) > 0) {
+			throw new BusinessException(CommonErrorCode.PRODUCT_ORIGIN_IN_USE);
+		}
+
 		productOriginRepository.deleteById(id);
 	}
 

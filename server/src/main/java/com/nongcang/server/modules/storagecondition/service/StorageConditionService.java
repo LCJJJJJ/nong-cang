@@ -140,7 +140,9 @@ public class StorageConditionService {
 	public void deleteStorageCondition(Long id) {
 		getExistingStorageCondition(id);
 
-		if (storageConditionRepository.countCategoryReferences(id) > 0) {
+		if (storageConditionRepository.countCategoryReferences(id) > 0
+				|| storageConditionRepository.countShelfLifeRuleReferences(id) > 0
+				|| storageConditionRepository.countProductArchiveReferences(id) > 0) {
 			throw new BusinessException(CommonErrorCode.STORAGE_CONDITION_IN_USE);
 		}
 
