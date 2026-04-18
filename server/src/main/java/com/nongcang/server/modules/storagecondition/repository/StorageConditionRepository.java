@@ -168,6 +168,15 @@ public class StorageConditionRepository {
 				""", new MapSqlParameterSource("id", id));
 	}
 
+	public long countCategoryReferences(Long id) {
+		Long count = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM product_category
+				WHERE default_storage_condition_id = :id
+				""", new MapSqlParameterSource("id", id), Long.class);
+		return count == null ? 0L : count;
+	}
+
 	private MapSqlParameterSource buildParameters(StorageConditionEntity storageConditionEntity) {
 		return new MapSqlParameterSource()
 				.addValue("conditionCode", storageConditionEntity.conditionCode())

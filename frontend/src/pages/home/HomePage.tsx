@@ -21,6 +21,8 @@ import type {
   CategoryTreeItem,
   CategoryTreeQuery,
 } from '../../features/category/types'
+import { getStorageConditionOptions } from '../../features/storagecondition/api'
+import type { StorageConditionOption } from '../../features/storagecondition/types'
 import './HomePage.css'
 
 type CategoryPageRow = Omit<CategoryTreeItem, 'children'> &
@@ -34,11 +36,9 @@ interface CategoryFormState {
   parentId: string
   sortOrder: string
   status: string
-  defaultStorageType: string
-  defaultStorageCondition: string
+  defaultStorageConditionId: string
   shelfLifeDays: string
   warningDays: string
-  requireQualityCheck: boolean
   remarks: string
 }
 
@@ -48,11 +48,9 @@ const initialFormState: CategoryFormState = {
   parentId: '',
   sortOrder: '0',
   status: '1',
-  defaultStorageType: '',
-  defaultStorageCondition: '',
+  defaultStorageConditionId: '',
   shelfLifeDays: '',
   warningDays: '',
-  requireQualityCheck: false,
   remarks: '',
 }
 
@@ -64,6 +62,9 @@ function HomePage() {
   })
   const [categoryTree, setCategoryTree] = useState<CategoryPageRow[]>([])
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([])
+  const [storageConditionOptions, setStorageConditionOptions] = useState<
+    StorageConditionOption[]
+  >([])
   const [expandedKeys, setExpandedKeys] = useState<string[]>([])
   const [pageError, setPageError] = useState<AppError | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -105,9 +106,10 @@ function HomePage() {
 
     const bootstrap = async () => {
       try {
-        const [tree, options] = await Promise.all([
+        const [tree, options, storageConditions] = await Promise.all([
           getCategoryTree(),
           getCategoryOptions(),
+          getStorageConditionOptions(),
         ])
 
         if (!isMounted) {
@@ -116,6 +118,7 @@ function HomePage() {
 
         setCategoryTree(tree as CategoryPageRow[])
         setCategoryOptions(options)
+        setStorageConditionOptions(storageConditions)
         setExpandedKeys(collectInitialExpandedKeys(tree))
       } catch (error) {
         if (!isMounted) {
@@ -259,8 +262,12 @@ function HomePage() {
   }
 
   async function refreshCategoryOptions() {
-    const options = await getCategoryOptions()
+    const [options, storageConditions] = await Promise.all([
+      getCategoryOptions(),
+      getStorageConditionOptions(),
+    ])
     setCategoryOptions(options)
+    setStorageConditionOptions(storageConditions)
   }
 
   const columns: TreeTableColumn<CategoryPageRow>[] = [
@@ -297,7 +304,7 @@ function HomePage() {
     },
     {
       key: 'storage',
-      title: '默认储存类型',
+      title: '默认储存条件',
       minWidth: 210,
       render: (row) => joinStorageLabel(row),
     },
@@ -582,31 +589,26 @@ function HomePage() {
               </label>
 
               <label className="category-page__field">
-                <span>默认储存类型</span>
-                <input
-                  value={formState.defaultStorageType}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      defaultStorageType: event.target.value,
-                    }))
-                  }
-                  placeholder="例如 冷藏"
-                />
-              </label>
-
-              <label className="category-page__field">
                 <span>默认储存条件</span>
-                <input
-                  value={formState.defaultStorageCondition}
+                <select
+                  value={formState.defaultStorageConditionId}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      defaultStorageCondition: event.target.value,
+                      defaultStorageConditionId: event.target.value,
                     }))
                   }
-                  placeholder="例如 2-8°C"
-                />
+                >
+                  <option value="">不设置默认条件</option>
+                  {storageConditionOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}（{option.storageType}）
+                    </option>
+                  ))}
+                </select>
+                <small className="category-page__field-hint">
+                  仅可选择系统中已启用的储存条件
+                </small>
               </label>
 
               <label className="category-page__field">
@@ -635,20 +637,6 @@ function HomePage() {
                     }))
                   }
                 />
-              </label>
-
-              <label className="category-page__checkbox-field">
-                <input
-                  type="checkbox"
-                  checked={formState.requireQualityCheck}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      requireQualityCheck: event.target.checked,
-                    }))
-                  }
-                />
-                <span>要求质检</span>
               </label>
 
               <label className="category-page__field category-page__field--full">
@@ -745,11 +733,9 @@ function mapDetailToFormState(detail: CategoryDetail): CategoryFormState {
     parentId: detail.parentId ?? '',
     sortOrder: String(detail.sortOrder),
     status: String(detail.status),
-    defaultStorageType: detail.defaultStorageType ?? '',
-    defaultStorageCondition: detail.defaultStorageCondition ?? '',
+    defaultStorageConditionId: detail.defaultStorageConditionId ?? '',
     shelfLifeDays: detail.shelfLifeDays ? String(detail.shelfLifeDays) : '',
     warningDays: detail.warningDays != null ? String(detail.warningDays) : '',
-    requireQualityCheck: detail.requireQualityCheck,
     remarks: detail.remarks ?? '',
   }
 }
@@ -760,25 +746,21 @@ function mapFormStateToPayload(formState: CategoryFormState): CategoryFormPayloa
     parentId: formState.parentId ? Number(formState.parentId) : null,
     sortOrder: Number(formState.sortOrder),
     status: Number(formState.status),
-    defaultStorageType: formState.defaultStorageType.trim() || null,
-    defaultStorageCondition: formState.defaultStorageCondition.trim() || null,
+    defaultStorageConditionId: formState.defaultStorageConditionId
+      ? Number(formState.defaultStorageConditionId)
+      : null,
     shelfLifeDays: formState.shelfLifeDays ? Number(formState.shelfLifeDays) : null,
     warningDays: formState.warningDays ? Number(formState.warningDays) : null,
-    requireQualityCheck: formState.requireQualityCheck,
     remarks: formState.remarks.trim() || null,
   }
 }
 
 function joinStorageLabel(row: CategoryPageRow) {
-  if (row.defaultStorageType && row.defaultStorageCondition) {
-    return `${row.defaultStorageType} (${row.defaultStorageCondition})`
-  }
-
-  if (row.defaultStorageType) {
-    return row.defaultStorageType
-  }
-
   if (row.defaultStorageCondition) {
+    if (row.defaultStorageType) {
+      return `${row.defaultStorageCondition}（${row.defaultStorageType}）`
+    }
+
     return row.defaultStorageCondition
   }
 

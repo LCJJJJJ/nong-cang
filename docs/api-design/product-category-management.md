@@ -18,11 +18,9 @@
 - `ancestor_path`：祖先路径，形如 `/1/3/`
 - `sort_order`：排序值
 - `status`：`1` 启用，`0` 停用
-- `default_storage_type`：默认储存类型
-- `default_storage_condition`：默认储存条件
+- `default_storage_condition_id`：默认储存条件ID，关联 `storage_condition.id`
 - `shelf_life_days`：保质期基准天数
 - `warning_days`：预警提前天数
-- `require_quality_check`：是否要求质检
 - `remarks`：备注
 - `created_at` / `updated_at`
 
@@ -78,11 +76,11 @@
     "sortOrder": 10,
     "status": 1,
     "statusLabel": "启用",
+    "defaultStorageConditionId": null,
     "defaultStorageType": null,
     "defaultStorageCondition": null,
     "shelfLifeDays": null,
     "warningDays": 2,
-    "requireQualityCheck": false,
     "remarks": "蔬菜大类",
     "createdAt": "2026-04-19T10:00:00+08:00",
     "updatedAt": "2026-04-19T10:00:00+08:00",
@@ -134,11 +132,11 @@
   "sortOrder": 1,
   "status": 1,
   "statusLabel": "启用",
+  "defaultStorageConditionId": "1",
   "defaultStorageType": "冷藏",
-  "defaultStorageCondition": "2-8°C",
+  "defaultStorageCondition": "叶菜冷藏标准",
   "shelfLifeDays": 5,
   "warningDays": 1,
-  "requireQualityCheck": true,
   "remarks": "叶菜默认规则",
   "createdAt": "2026-04-19T10:00:00+08:00",
   "updatedAt": "2026-04-19T10:00:00+08:00"
@@ -157,11 +155,9 @@
   "parentId": null,
   "sortOrder": 30,
   "status": 1,
-  "defaultStorageType": "阴凉干燥",
-  "defaultStorageCondition": "常温避光",
+  "defaultStorageConditionId": 2,
   "shelfLifeDays": 180,
   "warningDays": 15,
-  "requireQualityCheck": false,
   "remarks": "首版新分类"
 }
 ```
@@ -169,6 +165,8 @@
 说明：
 
 - 分类编号由系统自动生成，前端新增表单不允许手动填写
+- `defaultStorageConditionId` 由前端从系统储存条件列表中选择后提交
+- 接口响应会回填该储存条件对应的名称 `defaultStorageCondition` 与储存类型 `defaultStorageType`
 
 响应数据：返回创建后的详情结构。
 
@@ -184,11 +182,9 @@
   "parentId": "1",
   "sortOrder": 1,
   "status": 1,
-  "defaultStorageType": "冷藏",
-  "defaultStorageCondition": "2-8°C",
+  "defaultStorageConditionId": 1,
   "shelfLifeDays": 5,
   "warningDays": 1,
-  "requireQualityCheck": true,
   "remarks": "叶菜默认规则"
 }
 ```
@@ -232,9 +228,10 @@
 
 ## 前端联调建议
 
-- 页面初始化调用 `/api/category/tree` 与 `/api/category/options`
+- 页面初始化调用 `/api/category/tree`、`/api/category/options` 与 `/api/storage-condition/options`
 - 筛选后重新请求 `/api/category/tree`
 - 树表格只处理展示与展开状态，不在前端重复造树
-- 新增/编辑成功后重新请求树数据和选项数据
+- 新增/编辑弹窗中，默认储存条件使用 `/api/storage-condition/options` 返回的已启用储存条件列表
+- 新增/编辑成功后重新请求树数据、分类选项和储存条件选项
 - 停用/启用与删除成功后重新请求树数据
 - 表单字段错误优先回显 `errors`

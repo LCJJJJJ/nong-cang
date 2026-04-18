@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,10 +86,44 @@ class StorageConditionControllerTests {
 
 	@Test
 	void shouldDeleteStorageCondition() throws Exception {
-		mockMvc.perform(delete("/api/storage-condition/3").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+		MvcResult createResult = mockMvc.perform(post("/api/storage-condition")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "conditionName": "删除测试条件",
+							  "storageType": "常温",
+							  "temperatureMin": 10.0,
+							  "temperatureMax": 18.0,
+							  "humidityMin": 40.0,
+							  "humidityMax": 60.0,
+							  "lightRequirement": "无特殊要求",
+							  "ventilationRequirement": "普通通风",
+							  "status": 1,
+							  "sortOrder": 99,
+							  "remarks": "删除接口测试"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String storageConditionId = objectMapper.readTree(createResult.getResponse().getContentAsString())
+				.path("data")
+				.path("id")
+				.asText();
+
+		mockMvc.perform(delete("/api/storage-condition/" + storageConditionId).header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("删除成功"));
+	}
+
+	@Test
+	void shouldRejectDeleteWhenStorageConditionIsReferenced() throws Exception {
+		mockMvc.perform(delete("/api/storage-condition/1").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("STORAGE_CONDITION_IN_USE"));
 	}
 
 	private String bearerToken() throws Exception {

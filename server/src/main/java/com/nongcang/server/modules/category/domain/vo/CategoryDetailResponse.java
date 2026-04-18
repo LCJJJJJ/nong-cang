@@ -11,11 +11,11 @@ public record CategoryDetailResponse(
 		Integer sortOrder,
 		Integer status,
 		String statusLabel,
+		Long defaultStorageConditionId,
 		String defaultStorageType,
 		String defaultStorageCondition,
 		Integer shelfLifeDays,
 		Integer warningDays,
-		Boolean requireQualityCheck,
 		String remarks,
 		String createdAt,
 		String updatedAt) {

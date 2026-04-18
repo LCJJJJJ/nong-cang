@@ -11,11 +11,11 @@ public record CategoryEntity(
 		String ancestorPath,
 		Integer sortOrder,
 		Integer status,
+		Long defaultStorageConditionId,
 		String defaultStorageType,
 		String defaultStorageCondition,
 		Integer shelfLifeDays,
 		Integer warningDays,
-		Boolean requireQualityCheck,
 		String remarks,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt) {

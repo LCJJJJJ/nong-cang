@@ -150,9 +150,14 @@
 
 `DELETE /api/storage-condition/{id}`
 
+说明：
+
+- 如果储存条件已被产品分类引用，接口返回业务错误，不允许直接删除
+
 ## 常见业务错误
 
 - `STORAGE_CONDITION_NOT_FOUND`：储存条件不存在
+- `STORAGE_CONDITION_IN_USE`：储存条件已被产品分类引用，不能删除
 - `STORAGE_CONDITION_CODE_DUPLICATED`：储存条件编号已存在
 - `STORAGE_CONDITION_NAME_DUPLICATED`：储存条件名称已存在
 - `STORAGE_CONDITION_LIGHT_REQUIREMENT_INVALID`：避光要求不在允许范围内

@@ -8,11 +8,11 @@ export interface CategoryTreeItem {
   sortOrder: number
   status: number
   statusLabel: string
+  defaultStorageConditionId: string | null
   defaultStorageType: string | null
   defaultStorageCondition: string | null
   shelfLifeDays: number | null
   warningDays: number | null
-  requireQualityCheck: boolean
   remarks: string | null
   createdAt: string
   updatedAt: string
@@ -38,11 +38,11 @@ export interface CategoryDetail {
   sortOrder: number
   status: number
   statusLabel: string
+  defaultStorageConditionId: string | null
   defaultStorageType: string | null
   defaultStorageCondition: string | null
   shelfLifeDays: number | null
   warningDays: number | null
-  requireQualityCheck: boolean
   remarks: string | null
   createdAt: string
   updatedAt: string
@@ -61,10 +61,8 @@ export interface CategoryFormPayload {
   parentId: number | null
   sortOrder: number
   status: number
-  defaultStorageType: string | null
-  defaultStorageCondition: string | null
+  defaultStorageConditionId: number | null
   shelfLifeDays: number | null
   warningDays: number | null
-  requireQualityCheck: boolean
   remarks: string | null
 }

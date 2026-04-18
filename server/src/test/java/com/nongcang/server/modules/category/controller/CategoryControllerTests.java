@@ -32,11 +32,16 @@ class CategoryControllerTests {
 
 	@Test
 	void shouldReturnCategoryTree() throws Exception {
-		mockMvc.perform(get("/api/category/tree").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+		mockMvc.perform(get("/api/category/tree")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.param("categoryName", "叶菜类"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data[0].categoryCode").value("CAT-A00"))
-				.andExpect(jsonPath("$.data[0].children[0].categoryCode").value("CAT-A01"));
+				.andExpect(jsonPath("$.data[0].children[0].categoryCode").value("CAT-A01"))
+				.andExpect(jsonPath("$.data[0].children[0].defaultStorageConditionId").value("1"))
+				.andExpect(jsonPath("$.data[0].children[0].defaultStorageCondition").value("叶菜冷藏标准"))
+				.andExpect(jsonPath("$.data[0].children[0].defaultStorageType").value("冷藏"));
 	}
 
 	@Test
@@ -50,11 +55,9 @@ class CategoryControllerTests {
 							  "parentId": null,
 							  "sortOrder": 99,
 							  "status": 1,
-							  "defaultStorageType": "常温",
-							  "defaultStorageCondition": "干燥通风",
+							  "defaultStorageConditionId": 1,
 							  "shelfLifeDays": 30,
 							  "warningDays": 5,
-							  "requireQualityCheck": false,
 							  "remarks": "接口测试"
 							}
 							"""))
@@ -62,7 +65,10 @@ class CategoryControllerTests {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("新增成功"))
 				.andExpect(jsonPath("$.data.categoryCode").value(org.hamcrest.Matchers.startsWith("CAT-")))
-				.andExpect(jsonPath("$.data.categoryLevel").value(1));
+				.andExpect(jsonPath("$.data.categoryLevel").value(1))
+				.andExpect(jsonPath("$.data.defaultStorageConditionId").value("1"))
+				.andExpect(jsonPath("$.data.defaultStorageCondition").value("叶菜冷藏标准"))
+				.andExpect(jsonPath("$.data.defaultStorageType").value("冷藏"));
 	}
 
 	@Test

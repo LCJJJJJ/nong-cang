@@ -1,7 +1,6 @@
 package com.nongcang.server.modules.category.service;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import com.nongcang.server.modules.category.domain.vo.CategoryDetailResponse;
 import com.nongcang.server.modules.category.domain.vo.CategoryOptionResponse;
 import com.nongcang.server.modules.category.domain.vo.CategoryTreeItemResponse;
 import com.nongcang.server.modules.category.repository.CategoryRepository;
+import com.nongcang.server.modules.storagecondition.repository.StorageConditionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -38,9 +38,13 @@ public class CategoryService {
 	private static final DateTimeFormatter CATEGORY_CODE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
 	private final CategoryRepository categoryRepository;
+	private final StorageConditionRepository storageConditionRepository;
 
-	public CategoryService(CategoryRepository categoryRepository) {
+	public CategoryService(
+			CategoryRepository categoryRepository,
+			StorageConditionRepository storageConditionRepository) {
 		this.categoryRepository = categoryRepository;
+		this.storageConditionRepository = storageConditionRepository;
 	}
 
 	public List<CategoryTreeItemResponse> getCategoryTree(CategoryTreeQueryRequest queryRequest) {
@@ -87,11 +91,11 @@ public class CategoryService {
 				buildAncestorPath(parentCategory),
 				request.sortOrder(),
 				request.status(),
-				trimToNull(request.defaultStorageType()),
-				trimToNull(request.defaultStorageCondition()),
+				resolveStorageConditionId(request.defaultStorageConditionId()),
+				null,
+				null,
 				request.shelfLifeDays(),
 				request.warningDays(),
-				Boolean.TRUE.equals(request.requireQualityCheck()),
 				trimToNull(request.remarks()),
 				null,
 				null);
@@ -121,11 +125,11 @@ public class CategoryService {
 				newAncestorPath,
 				request.sortOrder(),
 				request.status(),
-				trimToNull(request.defaultStorageType()),
-				trimToNull(request.defaultStorageCondition()),
+				resolveStorageConditionId(request.defaultStorageConditionId()),
+				null,
+				null,
 				request.shelfLifeDays(),
 				request.warningDays(),
-				Boolean.TRUE.equals(request.requireQualityCheck()),
 				trimToNull(request.remarks()),
 				currentCategory.createdAt(),
 				currentCategory.updatedAt());
@@ -240,11 +244,11 @@ public class CategoryService {
 				categoryEntity.sortOrder(),
 				categoryEntity.status(),
 				toStatusLabel(categoryEntity.status()),
+				categoryEntity.defaultStorageConditionId(),
 				categoryEntity.defaultStorageType(),
 				categoryEntity.defaultStorageCondition(),
 				categoryEntity.shelfLifeDays(),
 				categoryEntity.warningDays(),
-				categoryEntity.requireQualityCheck(),
 				categoryEntity.remarks(),
 				toIsoDateTime(categoryEntity.createdAt()),
 				toIsoDateTime(categoryEntity.updatedAt()),
@@ -279,12 +283,6 @@ public class CategoryService {
 
 		return categoryRepository.findById(parentId)
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.CATEGORY_PARENT_NOT_FOUND));
-	}
-
-	private void validateUniqueCategoryCode(String categoryCode, Long excludeId) {
-		if (categoryRepository.existsByCategoryCode(categoryCode.trim(), excludeId)) {
-			throw new BusinessException(CommonErrorCode.CATEGORY_CODE_DUPLICATED);
-		}
 	}
 
 	private void validateUniqueSiblingName(Long parentId, String categoryName, Long excludeId) {
@@ -344,14 +342,24 @@ public class CategoryService {
 				categoryEntity.sortOrder(),
 				categoryEntity.status(),
 				toStatusLabel(categoryEntity.status()),
+				categoryEntity.defaultStorageConditionId(),
 				categoryEntity.defaultStorageType(),
 				categoryEntity.defaultStorageCondition(),
 				categoryEntity.shelfLifeDays(),
 				categoryEntity.warningDays(),
-				categoryEntity.requireQualityCheck(),
 				categoryEntity.remarks(),
 				toIsoDateTime(categoryEntity.createdAt()),
 				toIsoDateTime(categoryEntity.updatedAt()));
+	}
+
+	private Long resolveStorageConditionId(Long storageConditionId) {
+		if (storageConditionId == null) {
+			return null;
+		}
+
+		return storageConditionRepository.findById(storageConditionId)
+				.map(storageCondition -> storageCondition.id())
+				.orElseThrow(() -> new BusinessException(CommonErrorCode.STORAGE_CONDITION_NOT_FOUND));
 	}
 
 	private String toStatusLabel(Integer status) {

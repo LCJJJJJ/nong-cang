@@ -17,15 +17,11 @@ public record CategoryUpdateRequest(
 		@Min(value = 0, message = "状态值不正确")
 		@Max(value = 1, message = "状态值不正确")
 		Integer status,
-		@Size(max = 64, message = "默认储存类型长度不能超过64个字符")
-		String defaultStorageType,
-		@Size(max = 128, message = "默认储存条件长度不能超过128个字符")
-		String defaultStorageCondition,
+		Long defaultStorageConditionId,
 		@Min(value = 1, message = "保质期基准必须大于0")
 		Integer shelfLifeDays,
 		@Min(value = 0, message = "预警提前天数不能小于0")
 		Integer warningDays,
-		Boolean requireQualityCheck,
 		@Size(max = 255, message = "备注长度不能超过255个字符")
 		String remarks) {
 }

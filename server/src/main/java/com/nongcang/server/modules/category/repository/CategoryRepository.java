@@ -17,6 +17,29 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class CategoryRepository {
 
+	private static final String CATEGORY_SELECT_COLUMNS = """
+			SELECT
+			  pc.id,
+			  pc.category_code,
+			  pc.category_name,
+			  pc.parent_id,
+			  pc.category_level,
+			  pc.ancestor_path,
+			  pc.sort_order,
+			  pc.status,
+			  pc.default_storage_condition_id,
+			  sc.storage_type AS default_storage_type,
+			  sc.condition_name AS default_storage_condition,
+			  pc.shelf_life_days,
+			  pc.warning_days,
+			  pc.remarks,
+			  pc.created_at,
+			  pc.updated_at
+			FROM product_category pc
+			LEFT JOIN storage_condition sc
+			  ON sc.id = pc.default_storage_condition_id
+			""";
+
 	private static final RowMapper<CategoryEntity> CATEGORY_ROW_MAPPER = new RowMapper<>() {
 		@Override
 		public CategoryEntity mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -29,11 +52,11 @@ public class CategoryRepository {
 					rs.getString("ancestor_path"),
 					rs.getInt("sort_order"),
 					rs.getInt("status"),
+					rs.getObject("default_storage_condition_id", Long.class),
 					rs.getString("default_storage_type"),
 					rs.getString("default_storage_condition"),
 					rs.getObject("shelf_life_days", Integer.class),
 					rs.getObject("warning_days", Integer.class),
-					rs.getBoolean("require_quality_check"),
 					rs.getString("remarks"),
 					toLocalDateTime(rs.getTimestamp("created_at")),
 					toLocalDateTime(rs.getTimestamp("updated_at")));
@@ -47,28 +70,22 @@ public class CategoryRepository {
 	}
 
 	public List<CategoryEntity> findAll() {
-		return namedParameterJdbcTemplate.query("""
-				SELECT *
-				FROM product_category
-				ORDER BY category_level ASC, sort_order ASC, id ASC
+		return namedParameterJdbcTemplate.query(CATEGORY_SELECT_COLUMNS + """
+				ORDER BY pc.category_level ASC, pc.sort_order ASC, pc.id ASC
 				""", CATEGORY_ROW_MAPPER);
 	}
 
 	public Optional<CategoryEntity> findById(Long id) {
-		List<CategoryEntity> categoryEntities = namedParameterJdbcTemplate.query("""
-				SELECT *
-				FROM product_category
-				WHERE id = :id
+		List<CategoryEntity> categoryEntities = namedParameterJdbcTemplate.query(CATEGORY_SELECT_COLUMNS + """
+				WHERE pc.id = :id
 				""", new MapSqlParameterSource("id", id), CATEGORY_ROW_MAPPER);
 
 		return categoryEntities.stream().findFirst();
 	}
 
 	public Optional<CategoryEntity> findByCode(String categoryCode) {
-		List<CategoryEntity> categoryEntities = namedParameterJdbcTemplate.query("""
-				SELECT *
-				FROM product_category
-				WHERE category_code = :categoryCode
+		List<CategoryEntity> categoryEntities = namedParameterJdbcTemplate.query(CATEGORY_SELECT_COLUMNS + """
+				WHERE pc.category_code = :categoryCode
 				""", new MapSqlParameterSource("categoryCode", categoryCode), CATEGORY_ROW_MAPPER);
 
 		return categoryEntities.stream().findFirst();
@@ -124,11 +141,9 @@ public class CategoryRepository {
 				  ancestor_path,
 				  sort_order,
 				  status,
-				  default_storage_type,
-				  default_storage_condition,
+				  default_storage_condition_id,
 				  shelf_life_days,
 				  warning_days,
-				  require_quality_check,
 				  remarks
 				)
 				VALUES (
@@ -139,11 +154,9 @@ public class CategoryRepository {
 				  :ancestorPath,
 				  :sortOrder,
 				  :status,
-				  :defaultStorageType,
-				  :defaultStorageCondition,
+				  :defaultStorageConditionId,
 				  :shelfLifeDays,
 				  :warningDays,
-				  :requireQualityCheck,
 				  :remarks
 				)
 				""", buildParameterSource(categoryEntity), generatedKeyHolder);
@@ -162,11 +175,9 @@ public class CategoryRepository {
 				    ancestor_path = :ancestorPath,
 				    sort_order = :sortOrder,
 				    status = :status,
-				    default_storage_type = :defaultStorageType,
-				    default_storage_condition = :defaultStorageCondition,
+				    default_storage_condition_id = :defaultStorageConditionId,
 				    shelf_life_days = :shelfLifeDays,
 				    warning_days = :warningDays,
-				    require_quality_check = :requireQualityCheck,
 				    remarks = :remarks
 				WHERE id = :id
 				""", buildParameterSource(categoryEntity).addValue("id", categoryEntity.id()));
@@ -222,11 +233,9 @@ public class CategoryRepository {
 				.addValue("ancestorPath", categoryEntity.ancestorPath())
 				.addValue("sortOrder", categoryEntity.sortOrder())
 				.addValue("status", categoryEntity.status())
-				.addValue("defaultStorageType", categoryEntity.defaultStorageType())
-				.addValue("defaultStorageCondition", categoryEntity.defaultStorageCondition())
+				.addValue("defaultStorageConditionId", categoryEntity.defaultStorageConditionId())
 				.addValue("shelfLifeDays", categoryEntity.shelfLifeDays())
 				.addValue("warningDays", categoryEntity.warningDays())
-				.addValue("requireQualityCheck", categoryEntity.requireQualityCheck())
 				.addValue("remarks", categoryEntity.remarks());
 	}
 
