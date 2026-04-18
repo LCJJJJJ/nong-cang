@@ -42,7 +42,7 @@ const navigationSections: NavigationSection[] = [
       { label: '产品分类管理', path: '/' },
       { label: '产品档案管理' },
       { label: '产品单位管理', path: '/product-units' },
-      { label: '产地信息管理' },
+      { label: '产地信息管理', path: '/product-origins' },
       { label: '储存条件管理', path: '/storage-conditions' },
       { label: '保质期规则管理' },
       { label: '品质等级管理' },
@@ -97,6 +97,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '产品单位管理',
     description:
       '维护农产品通用计量单位，统一产品档案和后续出入库、库存业务的单位口径。',
+  },
+  '/product-origins': {
+    title: '产地信息管理',
+    description:
+      '维护标准产地信息，为产品档案、质量追溯和统计分析提供统一产地口径。',
   },
 }
 
