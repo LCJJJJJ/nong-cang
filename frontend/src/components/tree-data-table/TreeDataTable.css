@@ -1,0 +1,124 @@
+.tree-data-table {
+  background: #ffffff;
+}
+
+.tree-data-table__scroll {
+  overflow-x: auto;
+}
+
+.tree-data-table__table {
+  width: 100%;
+  min-width: 1200px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tree-data-table__cell {
+  padding: 24px 16px;
+  border-top: 1px solid rgba(188, 202, 188, 0.18);
+  font-size: 14px;
+  color: #191c1d;
+  white-space: nowrap;
+  background: #ffffff;
+}
+
+.tree-data-table__cell.is-header {
+  border-top: 0;
+  background: #f2f4f5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #3d4a3f;
+  text-transform: uppercase;
+}
+
+.tree-data-table__cell.is-sticky-right {
+  position: sticky;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.tree-data-table__cell.is-header.is-sticky-right {
+  z-index: 4;
+  background: #f2f4f5;
+}
+
+.tree-data-table__cell.is-sticky-right::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -16px;
+  width: 16px;
+  background: linear-gradient(
+    90deg,
+    rgba(248, 250, 251, 0),
+    rgba(216, 218, 219, 0.24)
+  );
+  pointer-events: none;
+}
+
+.tree-data-table__cell:first-child {
+  padding-left: 24px;
+}
+
+.tree-data-table__cell:last-child {
+  padding-right: 24px;
+}
+
+.tree-data-table__cell.is-center {
+  text-align: center;
+}
+
+.tree-data-table__cell.is-right {
+  text-align: right;
+}
+
+.tree-data-table__tree-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: var(--tree-indent);
+}
+
+.tree-data-table__toggle {
+  width: 18px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #3d4a3f;
+  text-align: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.tree-data-table__toggle.is-placeholder {
+  cursor: default;
+}
+
+.tree-data-table__toggle:disabled {
+  opacity: 1;
+}
+
+.tree-data-table__tree-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tree-data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.tree-data-table tbody tr:hover .tree-data-table__cell {
+  background: #f2f4f5;
+}
+
+.tree-data-table tbody tr:hover .tree-data-table__cell.is-sticky-right {
+  background: #f2f4f5;
+}
+
+.tree-data-table__empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: #6d7a6e;
+  font-size: 14px;
+  background: #ffffff;
+}
