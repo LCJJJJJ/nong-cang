@@ -10,6 +10,7 @@ import HomePage from '../pages/home/HomePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
+import ShelfLifeRulePage from '../pages/shelf-life-rule/ShelfLifeRulePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/product-origins" element={<ProductOriginPage />} />
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />
+            <Route path="/shelf-life-rules" element={<ShelfLifeRulePage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
           </Route>
           </Route>
