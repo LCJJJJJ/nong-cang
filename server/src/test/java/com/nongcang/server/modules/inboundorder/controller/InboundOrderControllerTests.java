@@ -124,6 +124,32 @@ class InboundOrderControllerTests {
 				.andExpect(jsonPath("$.data[0].unitName").isNotEmpty());
 	}
 
+	@Test
+	void shouldRejectDecimalQuantityForIntegerUnitInboundOrder() throws Exception {
+		mockMvc.perform(post("/api/inbound-order")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "supplierId": 1,
+							  "warehouseId": 11,
+							  "expectedArrivalAt": "2026-04-21T09:30:00",
+							  "remarks": "整数单位测试",
+							  "items": [
+							    {
+							      "productId": 12,
+							      "quantity": 1.5,
+							      "sortOrder": 1,
+							      "remarks": ""
+							    }
+							  ]
+							}
+							"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("QUANTITY_PRECISION_INVALID"));
+	}
+
 	private String bearerToken() throws Exception {
 		MvcResult mvcResult = mockMvc.perform(post("/api/auth/login")
 					.contentType(MediaType.APPLICATION_JSON)

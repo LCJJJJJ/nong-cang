@@ -24,6 +24,7 @@ export interface InventoryStocktakingItem {
   unitId: string
   unitName: string
   unitSymbol: string
+  precisionDigits: number
   warehouseId: string
   warehouseName: string
   zoneId: string

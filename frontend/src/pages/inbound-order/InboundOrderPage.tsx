@@ -25,6 +25,7 @@ import { getSupplierOptions } from '../../features/supplier/api'
 import type { SupplierOption } from '../../features/supplier/types'
 import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
+import { buildQuantityStep } from '../../utils/quantity'
 import './InboundOrderPage.css'
 
 type InboundOrderRow = TreeTableRow & InboundOrderListItem
@@ -133,6 +134,9 @@ function InboundOrderPage() {
       setIsLoading(false)
     }
   }
+
+  const resolveProductPrecision = (productId: string) =>
+    productOptions.find((option) => option.id === productId)?.precisionDigits
 
   const columns: TreeTableColumn<InboundOrderRow>[] = [
     {
@@ -587,7 +591,7 @@ function InboundOrderPage() {
                       <span>数量</span>
                       <input
                         type="number"
-                        step="0.001"
+                        step={buildQuantityStep(resolveProductPrecision(item.productId))}
                         value={item.quantity}
                         onChange={(event) =>
                           handleItemChange(index, 'quantity', event.target.value)

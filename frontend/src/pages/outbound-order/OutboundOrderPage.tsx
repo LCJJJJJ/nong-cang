@@ -25,6 +25,7 @@ import { getProductArchiveOptions } from '../../features/productarchive/api'
 import type { ProductArchiveOption } from '../../features/productarchive/types'
 import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
+import { buildQuantityStep } from '../../utils/quantity'
 import './OutboundOrderPage.css'
 
 type OutboundOrderRow = TreeTableRow & OutboundOrderListItem
@@ -133,6 +134,9 @@ function OutboundOrderPage() {
       setIsLoading(false)
     }
   }
+
+  const resolveProductPrecision = (productId: string) =>
+    productOptions.find((option) => option.id === productId)?.precisionDigits
 
   const columns: TreeTableColumn<OutboundOrderRow>[] = [
     {
@@ -579,7 +583,7 @@ function OutboundOrderPage() {
                         <input
                           type="number"
                           min="0"
-                          step="0.001"
+                          step={buildQuantityStep(resolveProductPrecision(item.productId))}
                           value={item.quantity}
                           onChange={(event) =>
                             updateFormItem(index, 'quantity', event.target.value)

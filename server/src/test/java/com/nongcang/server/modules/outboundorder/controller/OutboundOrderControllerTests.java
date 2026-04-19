@@ -50,12 +50,12 @@ class OutboundOrderControllerTests {
 					.content("""
 							{
 							  "customerId": 1,
-							  "warehouseId": 2,
+							  "warehouseId": 1,
 							  "expectedDeliveryAt": "2026-04-22T09:00:00",
 							  "remarks": "接口测试",
 							  "items": [
 							    {
-							      "productId": 3,
+							      "productId": 1,
 							      "quantity": 10.5,
 							      "sortOrder": 1,
 							      "remarks": "首行"
@@ -160,6 +160,32 @@ class OutboundOrderControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("出库单已取消"));
+	}
+
+	@Test
+	void shouldRejectDecimalQuantityForIntegerUnitOutboundOrder() throws Exception {
+		mockMvc.perform(post("/api/outbound-order")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "customerId": 2,
+							  "warehouseId": 11,
+							  "expectedDeliveryAt": "2026-04-22T13:00:00",
+							  "remarks": "整数单位测试",
+							  "items": [
+							    {
+							      "productId": 12,
+							      "quantity": 2.5,
+							      "sortOrder": 1,
+							      "remarks": ""
+							    }
+							  ]
+							}
+							"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("QUANTITY_PRECISION_INVALID"));
 	}
 
 	private String bearerToken() throws Exception {

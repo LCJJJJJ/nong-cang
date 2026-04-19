@@ -77,8 +77,8 @@ SELECT
   warehouse.`id`,
   zone.`id`,
   location.`id`,
-  48.997,
-  47.997,
+  49.000,
+  48.000,
   -1.000,
   '已完成盘点示例明细'
 FROM `inventory_stocktaking_order` stocktaking_order
@@ -98,7 +98,7 @@ WHERE stocktaking_order.`stocktaking_code` = 'STK-202604190001'
 UPDATE `inventory_stock` stock
 JOIN `product_archive` product_archive ON product_archive.`id` = stock.`product_id`
 JOIN `warehouse_location` location ON location.`id` = stock.`location_id`
-SET stock.`quantity` = 47.997
+SET stock.`quantity` = 48.000
 WHERE product_archive.`product_code` = 'PROD-20260419083640261'
   AND location.`location_code` = 'LOC-20260419100042806'
   AND NOT EXISTS (

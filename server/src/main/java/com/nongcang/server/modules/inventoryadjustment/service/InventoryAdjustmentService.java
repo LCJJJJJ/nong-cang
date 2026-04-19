@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.inventoryadjustment.domain.dto.InventoryAdjustmentCreateRequest;
 import com.nongcang.server.modules.inventoryadjustment.domain.dto.InventoryAdjustmentListQueryRequest;
 import com.nongcang.server.modules.inventoryadjustment.domain.entity.InventoryAdjustmentEntity;
@@ -45,6 +46,7 @@ public class InventoryAdjustmentService {
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final ProductArchiveRepository productArchiveRepository;
+	private final QuantityPrecisionValidator quantityPrecisionValidator;
 
 	public InventoryAdjustmentService(
 			InventoryAdjustmentRepository inventoryAdjustmentRepository,
@@ -53,7 +55,8 @@ public class InventoryAdjustmentService {
 			WarehouseRepository warehouseRepository,
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
-			ProductArchiveRepository productArchiveRepository) {
+			ProductArchiveRepository productArchiveRepository,
+			QuantityPrecisionValidator quantityPrecisionValidator) {
 		this.inventoryAdjustmentRepository = inventoryAdjustmentRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
 		this.inventoryTransactionRepository = inventoryTransactionRepository;
@@ -61,6 +64,7 @@ public class InventoryAdjustmentService {
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.productArchiveRepository = productArchiveRepository;
+		this.quantityPrecisionValidator = quantityPrecisionValidator;
 	}
 
 	public List<InventoryAdjustmentListItemResponse> getInventoryAdjustmentList(
@@ -85,7 +89,12 @@ public class InventoryAdjustmentService {
 		WarehouseZoneEntity zone = resolveZone(request.zoneId());
 		WarehouseLocationEntity location = resolveLocation(request.locationId());
 		validateWarehouseLocationRelation(request.warehouseId(), zone, location);
-		resolveProductId(request.productId());
+		var productArchive = productArchiveRepository.findById(request.productId())
+				.orElseThrow(() -> new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_NOT_FOUND));
+		quantityPrecisionValidator.validate(
+				quantity,
+				productArchive.precisionDigits(),
+				productArchive.unitName());
 
 		if (TYPE_DECREASE.equals(adjustmentType)) {
 			validateDecreaseAvailable(
@@ -217,12 +226,6 @@ public class InventoryAdjustmentService {
 	private WarehouseLocationEntity resolveLocation(Long locationId) {
 		return warehouseLocationRepository.findById(locationId)
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
-	}
-
-	private Long resolveProductId(Long productId) {
-		return productArchiveRepository.findById(productId)
-				.map(product -> product.id())
-				.orElseThrow(() -> new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_NOT_FOUND));
 	}
 
 	private void validateWarehouseLocationRelation(

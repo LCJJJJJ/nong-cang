@@ -73,6 +73,7 @@ public class ProductArchiveService {
 						entity.productName(),
 						entity.unitName(),
 						entity.unitSymbol(),
+						entity.precisionDigits(),
 						entity.status()))
 				.toList();
 	}
@@ -94,6 +95,7 @@ public class ProductArchiveService {
 				request.categoryId(),
 				null,
 				request.unitId(),
+				null,
 				null,
 				null,
 				request.originId(),
@@ -131,6 +133,7 @@ public class ProductArchiveService {
 				request.unitId(),
 				null,
 				null,
+				currentProductArchive.precisionDigits(),
 				request.originId(),
 				null,
 				request.storageConditionId(),

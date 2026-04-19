@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.customer.repository.CustomerRepository;
 import com.nongcang.server.modules.outboundtask.service.OutboundTaskService;
 import com.nongcang.server.modules.outboundorder.domain.dto.OutboundOrderCreateRequest;
@@ -44,18 +45,21 @@ public class OutboundOrderService {
 	private final WarehouseRepository warehouseRepository;
 	private final ProductArchiveRepository productArchiveRepository;
 	private final OutboundTaskService outboundTaskService;
+	private final QuantityPrecisionValidator quantityPrecisionValidator;
 
 	public OutboundOrderService(
 			OutboundOrderRepository outboundOrderRepository,
 			CustomerRepository customerRepository,
 			WarehouseRepository warehouseRepository,
 			ProductArchiveRepository productArchiveRepository,
-			OutboundTaskService outboundTaskService) {
+			OutboundTaskService outboundTaskService,
+			QuantityPrecisionValidator quantityPrecisionValidator) {
 		this.outboundOrderRepository = outboundOrderRepository;
 		this.customerRepository = customerRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.productArchiveRepository = productArchiveRepository;
 		this.outboundTaskService = outboundTaskService;
+		this.quantityPrecisionValidator = quantityPrecisionValidator;
 	}
 
 	public List<OutboundOrderListItemResponse> getOutboundOrderList(OutboundOrderListQueryRequest queryRequest) {
@@ -193,6 +197,10 @@ public class OutboundOrderService {
 
 		var productArchive = productArchiveRepository.findById(request.productId())
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_NOT_FOUND));
+		quantityPrecisionValidator.validate(
+				request.quantity(),
+				productArchive.precisionDigits(),
+				productArchive.unitName());
 
 		return new OutboundOrderItemEntity(
 				null,

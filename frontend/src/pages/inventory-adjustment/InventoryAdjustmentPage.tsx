@@ -22,6 +22,7 @@ import { getWarehouseLocationOptions } from '../../features/warehouselocation/ap
 import type { WarehouseLocationOption } from '../../features/warehouselocation/types'
 import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
 import type { WarehouseZoneOption } from '../../features/warehousezone/types'
+import { buildQuantityStep } from '../../utils/quantity'
 import './InventoryAdjustmentPage.css'
 
 type InventoryAdjustmentRow = TreeTableRow & InventoryAdjustmentListItem
@@ -143,6 +144,11 @@ function InventoryAdjustmentPage() {
           option.warehouseId === formState.warehouseId && option.zoneId === formState.zoneId,
       ),
     [formState.warehouseId, formState.zoneId, warehouseLocationOptions],
+  )
+
+  const selectedProductPrecision = useMemo(
+    () => productOptions.find((option) => option.id === formState.productId)?.precisionDigits,
+    [formState.productId, productOptions],
   )
 
   const columns: TreeTableColumn<InventoryAdjustmentRow>[] = [
@@ -509,7 +515,7 @@ function InventoryAdjustmentPage() {
                 <input
                   type="number"
                   min="0"
-                  step="0.001"
+                  step={buildQuantityStep(selectedProductPrecision)}
                   value={formState.quantity}
                   onChange={(event) =>
                     setFormState((current) => ({

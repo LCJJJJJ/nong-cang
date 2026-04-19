@@ -12,6 +12,7 @@ public record ProductArchiveEntity(
 		Long unitId,
 		String unitName,
 		String unitSymbol,
+		Integer precisionDigits,
 		Long originId,
 		String originName,
 		Long storageConditionId,

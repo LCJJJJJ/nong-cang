@@ -31,6 +31,7 @@ export interface ProductArchiveOption {
   label: string
   unitName: string
   unitSymbol: string
+  precisionDigits: number
   status: number
 }
 

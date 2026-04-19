@@ -25,6 +25,7 @@ import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
 import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
 import type { WarehouseZoneOption } from '../../features/warehousezone/types'
+import { buildQuantityStep } from '../../utils/quantity'
 import './InventoryStocktakingPage.css'
 
 type InventoryStocktakingRow = TreeTableRow & InventoryStocktakingListItem
@@ -591,7 +592,7 @@ function InventoryStocktakingPage() {
                           <input
                             type="number"
                             min="0"
-                            step="0.001"
+                            step={buildQuantityStep(item.precisionDigits)}
                             value={item.countedQuantity ?? ''}
                             onChange={(event) =>
                               updateCurrentDetailItem(index, 'countedQuantity', event.target.value)

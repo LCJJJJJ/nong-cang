@@ -5,5 +5,6 @@ public record ProductArchiveOptionResponse(
 		String label,
 		String unitName,
 		String unitSymbol,
+		Integer precisionDigits,
 		Integer status) {
 }

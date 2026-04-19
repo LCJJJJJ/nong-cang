@@ -13,6 +13,7 @@ public record InventoryStocktakingItemEntity(
 		Long unitId,
 		String unitName,
 		String unitSymbol,
+		Integer precisionDigits,
 		Long warehouseId,
 		String warehouseName,
 		Long zoneId,

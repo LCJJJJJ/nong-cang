@@ -47,10 +47,10 @@ class InventoryAdjustmentControllerTests {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{
-							  "warehouseId": 2,
-							  "zoneId": 2,
-							  "locationId": 2,
-							  "productId": 3,
+							  "warehouseId": 1,
+							  "zoneId": 1,
+							  "locationId": 1,
+							  "productId": 1,
 							  "adjustmentType": "INCREASE",
 							  "quantity": 1.5,
 							  "reason": "人工补录",
@@ -84,6 +84,28 @@ class InventoryAdjustmentControllerTests {
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("INVENTORY_ADJUSTMENT_STOCK_INSUFFICIENT"));
+	}
+
+	@Test
+	void shouldRejectDecimalQuantityForIntegerUnitInventoryAdjustment() throws Exception {
+		mockMvc.perform(post("/api/inventory-adjustment")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "warehouseId": 11,
+							  "zoneId": 9,
+							  "locationId": 9,
+							  "productId": 12,
+							  "adjustmentType": "INCREASE",
+							  "quantity": 1.5,
+							  "reason": "人工补录",
+							  "remarks": "精度测试"
+							}
+							"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("QUANTITY_PRECISION_INVALID"));
 	}
 
 	private String bearerToken() throws Exception {

@@ -177,6 +177,44 @@ class InventoryStocktakingControllerTests {
 				.andExpect(jsonPath("$.code").value("INVENTORY_STOCKTAKING_RESERVED_CONFLICT"));
 	}
 
+	@Test
+	void shouldRejectDecimalCountForIntegerUnitStocktaking() throws Exception {
+		MvcResult createResult = mockMvc.perform(post("/api/inventory-stocktaking")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "warehouseId": 11,
+							  "zoneId": 9,
+							  "remarks": "整数单位盘点测试"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		JsonNode detail = objectMapper.readTree(createResult.getResponse().getContentAsString()).path("data");
+		String stocktakingId = detail.path("id").asText();
+		String itemId = detail.path("items").path(0).path("id").asText();
+
+		mockMvc.perform(put("/api/inventory-stocktaking/" + stocktakingId + "/items")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "items": [
+							    {
+							      "itemId": %s,
+							      "countedQuantity": 47.5,
+							      "remarks": "小数盘点"
+							    }
+							  ]
+							}
+							""".formatted(itemId)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("QUANTITY_PRECISION_INVALID"));
+	}
+
 	private String findOutboundTaskIdByOrderId(JsonNode taskList, String outboundOrderId) {
 		for (JsonNode task : taskList) {
 			if (outboundOrderId.equals(task.path("outboundOrderId").asText())) {

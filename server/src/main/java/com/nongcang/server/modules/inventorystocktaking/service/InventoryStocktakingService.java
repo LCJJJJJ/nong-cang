@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.inventorystock.domain.entity.InventoryStockEntity;
 import com.nongcang.server.modules.inventorystock.repository.InventoryStockQueryRepository;
 import com.nongcang.server.modules.inventorystocktaking.domain.dto.InventoryStocktakingCreateRequest;
@@ -51,6 +52,7 @@ public class InventoryStocktakingService {
 	private final InventoryTransactionRepository inventoryTransactionRepository;
 	private final WarehouseRepository warehouseRepository;
 	private final WarehouseZoneRepository warehouseZoneRepository;
+	private final QuantityPrecisionValidator quantityPrecisionValidator;
 
 	public InventoryStocktakingService(
 			InventoryStocktakingRepository inventoryStocktakingRepository,
@@ -58,13 +60,15 @@ public class InventoryStocktakingService {
 			InventoryStockRepository inventoryStockRepository,
 			InventoryTransactionRepository inventoryTransactionRepository,
 			WarehouseRepository warehouseRepository,
-			WarehouseZoneRepository warehouseZoneRepository) {
+			WarehouseZoneRepository warehouseZoneRepository,
+			QuantityPrecisionValidator quantityPrecisionValidator) {
 		this.inventoryStocktakingRepository = inventoryStocktakingRepository;
 		this.inventoryStockQueryRepository = inventoryStockQueryRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
 		this.inventoryTransactionRepository = inventoryTransactionRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
+		this.quantityPrecisionValidator = quantityPrecisionValidator;
 	}
 
 	public List<InventoryStocktakingListItemResponse> getInventoryStocktakingList(
@@ -133,11 +137,15 @@ public class InventoryStocktakingService {
 				throw new BusinessException(CommonErrorCode.RESOURCE_NOT_FOUND);
 			}
 
-			if (itemRequest.countedQuantity().compareTo(BigDecimal.ZERO) < 0) {
-				throw new BusinessException(CommonErrorCode.INVENTORY_STOCKTAKING_COUNT_INVALID);
-			}
+				if (itemRequest.countedQuantity().compareTo(BigDecimal.ZERO) < 0) {
+					throw new BusinessException(CommonErrorCode.INVENTORY_STOCKTAKING_COUNT_INVALID);
+				}
+				quantityPrecisionValidator.validate(
+						itemRequest.countedQuantity(),
+						currentItem.precisionDigits(),
+						currentItem.unitName());
 
-			BigDecimal difference = itemRequest.countedQuantity().subtract(currentItem.systemQuantity());
+				BigDecimal difference = itemRequest.countedQuantity().subtract(currentItem.systemQuantity());
 			inventoryStocktakingRepository.updateItemCount(
 					id,
 					currentItem.id(),
@@ -319,6 +327,7 @@ public class InventoryStocktakingService {
 				entity.unitId(),
 				entity.unitName(),
 				entity.unitSymbol(),
+				entity.precisionDigits(),
 				entity.warehouseId(),
 				entity.warehouseName(),
 				entity.zoneId(),
