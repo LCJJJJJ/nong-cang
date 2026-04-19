@@ -12,14 +12,18 @@ import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
 import com.nongcang.server.config.AssistantProperties;
 import com.nongcang.server.modules.assistant.domain.dto.AssistantChatRequest;
+import com.nongcang.server.modules.assistant.domain.dto.AssistantActionExecuteRequest;
+import com.nongcang.server.modules.assistant.domain.entity.AssistantActionPlanEntity;
 import com.nongcang.server.modules.assistant.domain.entity.AssistantMessageEntity;
 import com.nongcang.server.modules.assistant.domain.entity.AssistantSessionEntity;
 import com.nongcang.server.modules.assistant.domain.entity.AssistantToolAuditEntity;
+import com.nongcang.server.modules.assistant.domain.vo.AssistantActionExecuteResponse;
 import com.nongcang.server.modules.assistant.domain.vo.AssistantChatResponse;
 import com.nongcang.server.modules.assistant.domain.vo.AssistantColumnResponse;
 import com.nongcang.server.modules.assistant.domain.vo.AssistantMessageResponse;
 import com.nongcang.server.modules.assistant.domain.vo.AssistantSessionListItemResponse;
 import com.nongcang.server.modules.assistant.repository.AssistantMessageRepository;
+import com.nongcang.server.modules.assistant.repository.AssistantActionPlanRepository;
 import com.nongcang.server.modules.assistant.repository.AssistantSessionRepository;
 import com.nongcang.server.modules.assistant.repository.AssistantToolAuditRepository;
 import com.nongcang.server.modules.auth.domain.AuthenticatedUser;
@@ -38,6 +42,8 @@ public class AssistantService {
 	private final AssistantToolAuditRepository assistantToolAuditRepository;
 	private final AssistantLlmClient assistantLlmClient;
 	private final AssistantToolRegistry assistantToolRegistry;
+	private final AssistantActionPlanRepository assistantActionPlanRepository;
+	private final AssistantBasicInfoActionService assistantBasicInfoActionService;
 	private final AssistantProperties assistantProperties;
 	private final ObjectMapper objectMapper;
 
@@ -47,6 +53,8 @@ public class AssistantService {
 			AssistantToolAuditRepository assistantToolAuditRepository,
 			AssistantLlmClient assistantLlmClient,
 			AssistantToolRegistry assistantToolRegistry,
+			AssistantActionPlanRepository assistantActionPlanRepository,
+			AssistantBasicInfoActionService assistantBasicInfoActionService,
 			AssistantProperties assistantProperties,
 			ObjectMapper objectMapper) {
 		this.assistantSessionRepository = assistantSessionRepository;
@@ -54,6 +62,8 @@ public class AssistantService {
 		this.assistantToolAuditRepository = assistantToolAuditRepository;
 		this.assistantLlmClient = assistantLlmClient;
 		this.assistantToolRegistry = assistantToolRegistry;
+		this.assistantActionPlanRepository = assistantActionPlanRepository;
+		this.assistantBasicInfoActionService = assistantBasicInfoActionService;
 		this.assistantProperties = assistantProperties;
 		this.objectMapper = objectMapper;
 	}
@@ -105,11 +115,13 @@ public class AssistantService {
 				break;
 			}
 
-			llmMessages.add(buildAssistantToolCallMessage(llmResponse));
+				llmMessages.add(buildAssistantToolCallMessage(llmResponse));
 			for (AssistantToolCall toolCall : llmResponse.toolCalls()) {
 				AssistantToolExecutionResult toolResult = assistantToolRegistry.execute(
 						toolCall,
-						assistantProperties.getToolMaxRows());
+						assistantProperties.getToolMaxRows(),
+						session.id(),
+						authenticatedUser.userId());
 				toolResults.add(toolResult);
 				assistantToolAuditRepository.insert(new AssistantToolAuditEntity(
 						null,
@@ -133,7 +145,9 @@ public class AssistantService {
 
 		String metadataJson = toolResults.isEmpty()
 				? null
-				: serialize(new AssistantMessageMetadata(resolveUserFacingResultBlocks(toolResults)));
+				: serialize(new AssistantMessageMetadata(
+						resolveUserFacingResultBlocks(toolResults),
+						resolveUserFacingActionCard(toolResults)));
 
 		long assistantMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
 				null,
@@ -213,7 +227,9 @@ public class AssistantService {
 				for (AssistantToolCall toolCall : planningResponse.toolCalls()) {
 					AssistantToolExecutionResult toolResult = assistantToolRegistry.execute(
 							toolCall,
-							assistantProperties.getToolMaxRows());
+							assistantProperties.getToolMaxRows(),
+							session.id(),
+							authenticatedUser.userId());
 					toolResults.add(toolResult);
 					assistantToolAuditRepository.insert(new AssistantToolAuditEntity(
 							null,
@@ -244,9 +260,11 @@ public class AssistantService {
 						assistantContentBuilder);
 			}
 
-			String metadataJson = toolResults.isEmpty()
+		String metadataJson = toolResults.isEmpty()
 					? null
-					: serialize(new AssistantMessageMetadata(resolveUserFacingResultBlocks(toolResults)));
+					: serialize(new AssistantMessageMetadata(
+							resolveUserFacingResultBlocks(toolResults),
+							resolveUserFacingActionCard(toolResults)));
 
 			long assistantMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
 					null,
@@ -309,9 +327,12 @@ public class AssistantService {
 			AuthenticatedUser authenticatedUser,
 			AssistantChatRequest request) {
 		List<Map<String, Object>> messages = new ArrayList<>();
+		String pendingActionContext = assistantActionPlanRepository.findLatestOpenPlan(session.id(), authenticatedUser.userId())
+				.map(this::buildPendingActionContext)
+				.orElse("");
 		messages.add(Map.of(
 				"role", "system",
-				"content", buildSystemPrompt(authenticatedUser, request.routePath(), request.routeTitle())));
+				"content", buildSystemPrompt(authenticatedUser, request.routePath(), request.routeTitle(), pendingActionContext)));
 		assistantMessageRepository.findRecentBySessionId(session.id(), assistantProperties.getChatMaxHistory())
 				.forEach(message -> messages.add(Map.of(
 						"role", message.role(),
@@ -319,24 +340,34 @@ public class AssistantService {
 		return messages;
 	}
 
-	private String buildSystemPrompt(AuthenticatedUser authenticatedUser, String routePath, String routeTitle) {
+	private String buildSystemPrompt(
+			AuthenticatedUser authenticatedUser,
+			String routePath,
+			String routeTitle,
+			String pendingActionContext) {
 		String currentRoutePath = StringUtils.hasText(routePath) ? routePath : "未知页面";
 		String currentRouteTitle = StringUtils.hasText(routeTitle) ? routeTitle : "未命名页面";
 		return """
 				你是农产品仓储管理系统的智能助手，必须使用中文回答。
 				你擅长解释系统数据、查询业务记录、说明库存变化原因，并且优先使用工具来获取真实系统数据。
+				你还支持农产品基础信息管理模块的新增、修改和删除，包括：产品分类、产品档案、产品单位、产地信息、储存条件、品质等级。
+				当用户表达“新增、创建、添加、修改、更新、删除、移除、停用、启用”等写操作意图时，必须先调用 prepare_basic_info_write_action。
+				不要先调用查询工具来猜测写操作参数；写操作里涉及的分类、单位、产地、储存条件、品质等级，都可以直接把名称传给 prepare_basic_info_write_action，由后端负责解析成系统ID。
+				缺字段就继续追问；计划 READY 后，再让用户确认执行。删除操作必须要求用户明确确认删除。
 				禁止编造不存在的记录；当用户询问系统数据时，必须优先调用合适的工具。
 				如果结果为空，要明确告知未找到匹配数据；如果用户描述不清晰，可以简短追问。
 				仅当用户明确要求“刷新预警”时，才调用 refresh_alerts 工具。
 				当前登录用户：%s（角色：%s）
 				当前页面：%s（%s）
+				%s
 				请在回答里先给出结论，再补充关键记录摘要，保持简洁。
 				"""
 				.formatted(
 						authenticatedUser.displayName(),
 						String.join("、", authenticatedUser.roles()),
 						currentRouteTitle,
-						currentRoutePath);
+						currentRoutePath,
+						pendingActionContext);
 	}
 
 	private Map<String, Object> buildAssistantToolCallMessage(AssistantLlmResponse llmResponse) {
@@ -357,7 +388,7 @@ public class AssistantService {
 	}
 
 	private String toToolContent(AssistantToolExecutionResult toolResult) {
-		return serialize(toolResult.resultBlocks());
+		return serialize(toolResult);
 	}
 
 	private String defaultAssistantContent(List<AssistantToolExecutionResult> toolResults) {
@@ -399,6 +430,7 @@ public class AssistantService {
 				entity.content(),
 				entity.messageType(),
 				parseResultBlocks(entity.metadataJson()),
+				parseActionCard(entity.metadataJson()),
 				toIsoDateTime(entity.createdAt()));
 	}
 
@@ -409,6 +441,9 @@ public class AssistantService {
 
 		try {
 			AssistantMessageMetadata metadata = objectMapper.readValue(metadataJson, AssistantMessageMetadata.class);
+			if (metadata.resultBlocks() == null) {
+				return null;
+			}
 			return metadata.resultBlocks()
 					.stream()
 					.map(block -> new AssistantMessageResponse.AssistantResultBlockResponse(
@@ -421,6 +456,47 @@ public class AssistantService {
 									.toList(),
 							block.rows()))
 					.toList();
+		} catch (Exception exception) {
+			return null;
+		}
+	}
+
+	private AssistantMessageResponse.AssistantActionCardResponse parseActionCard(String metadataJson) {
+		if (!StringUtils.hasText(metadataJson)) {
+			return null;
+		}
+
+		try {
+			AssistantMessageMetadata metadata = objectMapper.readValue(metadataJson, AssistantMessageMetadata.class);
+			if (metadata.actionCard() == null) {
+				return null;
+			}
+
+			AssistantActionCard actionCard = metadata.actionCard();
+			return new AssistantMessageResponse.AssistantActionCardResponse(
+					actionCard.actionCode(),
+					actionCard.status(),
+					actionCard.resourceType(),
+					actionCard.resourceLabel(),
+					actionCard.actionType(),
+					actionCard.actionLabel(),
+					actionCard.targetLabel(),
+					actionCard.summary(),
+					actionCard.riskLevel(),
+					actionCard.confirmationMode(),
+					actionCard.confirmationTextHint(),
+					actionCard.missingFields().stream()
+							.map(field -> new AssistantMessageResponse.AssistantActionFieldPromptResponse(
+									field.field(),
+									field.label(),
+									field.hint()))
+							.toList(),
+					actionCard.previewFields().stream()
+							.map(field -> new AssistantMessageResponse.AssistantActionFieldValueResponse(
+									field.field(),
+									field.label(),
+									field.value()))
+							.toList());
 		} catch (Exception exception) {
 			return null;
 		}
@@ -477,5 +553,66 @@ public class AssistantService {
 		}
 
 		return List.of();
+	}
+
+	private AssistantActionCard resolveUserFacingActionCard(List<AssistantToolExecutionResult> toolResults) {
+		for (int index = toolResults.size() - 1; index >= 0; index--) {
+			AssistantActionCard actionCard = toolResults.get(index).actionCard();
+			if (actionCard != null) {
+				return actionCard;
+			}
+		}
+		return null;
+	}
+
+	@Transactional
+	public AssistantActionExecuteResponse executeActionPlan(
+			String actionCode,
+			AssistantActionExecuteRequest request,
+			Authentication authentication) {
+		AuthenticatedUser authenticatedUser = getAuthenticatedUser(authentication);
+		AssistantActionExecutionResult executionResult = assistantBasicInfoActionService.executeAction(
+				actionCode,
+				authenticatedUser.userId(),
+				request == null ? null : request.confirmationText());
+
+		AssistantActionPlanEntity plan = assistantActionPlanRepository.findByActionCodeAndUserId(actionCode, authenticatedUser.userId())
+				.orElseThrow(() -> new BusinessException(CommonErrorCode.ASSISTANT_ACTION_PLAN_NOT_FOUND));
+		String metadataJson = serialize(new AssistantMessageMetadata(List.of(), executionResult.actionCard()));
+		long assistantMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
+				null,
+				plan.sessionId(),
+				"assistant",
+				executionResult.message(),
+				"ACTION",
+				metadataJson,
+				null));
+
+		AssistantMessageEntity assistantMessage = assistantMessageRepository.findAllBySessionId(plan.sessionId()).stream()
+				.filter(message -> message.id().equals(assistantMessageId))
+				.findFirst()
+				.orElseThrow(() -> new BusinessException(CommonErrorCode.INTERNAL_SERVER_ERROR));
+		AssistantSessionEntity session = getExistingSession(plan.sessionId(), authenticatedUser.userId());
+		return new AssistantActionExecuteResponse(
+				toSessionListItemResponse(session),
+				toMessageResponse(assistantMessage));
+	}
+
+	private String buildPendingActionContext(AssistantActionPlanEntity plan) {
+		return """
+				当前存在一个未完成的写操作计划：
+				actionCode=%s
+				resourceType=%s
+				actionType=%s
+				status=%s
+				summary=%s
+				如果用户继续补充字段，请优先继续这个计划；如果用户明确说确认执行或确认删除，也应优先处理这个计划。
+				"""
+				.formatted(
+						plan.actionCode(),
+						plan.resourceType(),
+						plan.actionType(),
+						plan.status(),
+						plan.summary());
 	}
 }

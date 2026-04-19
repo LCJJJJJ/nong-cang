@@ -5,11 +5,13 @@ import remarkGfm from 'remark-gfm'
 
 import { normalizeError, type AppError } from '../../api/errors'
 import {
+  executeAssistantAction,
   getAssistantMessages,
   getAssistantSessions,
   streamAssistantChat,
 } from './api'
 import type {
+  AssistantActionCard,
   AssistantMessage,
   AssistantResultBlock,
   AssistantSessionListItem,
@@ -33,6 +35,8 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
   const [isLoadingSessions, setIsLoadingSessions] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [executingActionCode, setExecutingActionCode] = useState<string | null>(null)
+  const [actionConfirmTexts, setActionConfirmTexts] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!isOpen) {
@@ -400,6 +404,52 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
                             }}
                           />
                         ))}
+                        {message.actionCard ? (
+                          <AssistantActionCardPanel
+                            actionCard={message.actionCard}
+                            confirmationText={actionConfirmTexts[message.actionCard.actionCode] ?? ''}
+                            isExecuting={executingActionCode === message.actionCard.actionCode}
+                            onChangeConfirmationText={(value) =>
+                              setActionConfirmTexts((current) => ({
+                                ...current,
+                                [message.actionCard!.actionCode]: value,
+                              }))
+                            }
+                            onConfirm={async () => {
+                              setExecutingActionCode(message.actionCard!.actionCode)
+                              setPageError(null)
+
+                              try {
+                                const response = await executeAssistantAction(
+                                  message.actionCard!.actionCode,
+                                  actionConfirmTexts[message.actionCard!.actionCode],
+                                )
+
+                                setMessages((current) =>
+                                  mergeMessages([...current, response.assistantMessage]),
+                                )
+                                setSessions((current) =>
+                                  mergeSessions([
+                                    {
+                                      ...response.session,
+                                      lastMessagePreview: response.assistantMessage.content,
+                                    },
+                                    ...current.filter((item) => item.id !== response.session.id),
+                                  ]),
+                                )
+                                setActionConfirmTexts((current) => {
+                                  const nextState = { ...current }
+                                  delete nextState[message.actionCard!.actionCode]
+                                  return nextState
+                                })
+                              } catch (error) {
+                                setPageError(normalizeError(error))
+                              } finally {
+                                setExecutingActionCode(null)
+                              }
+                            }}
+                          />
+                        ) : null}
                       </div>
                     </article>
                   ))
@@ -491,6 +541,89 @@ function AssistantResultCard({
               ))}
             </tbody>
           </table>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function AssistantActionCardPanel({
+  actionCard,
+  confirmationText,
+  isExecuting,
+  onChangeConfirmationText,
+  onConfirm,
+}: {
+  actionCard: AssistantActionCard
+  confirmationText: string
+  isExecuting: boolean
+  onChangeConfirmationText: (value: string) => void
+  onConfirm: () => void
+}) {
+  const requiresDeleteText = actionCard.confirmationMode === 'CONFIRM_DELETE_TEXT'
+  const canConfirm = !requiresDeleteText || confirmationText.trim() === '确认删除'
+
+  return (
+    <section className="assistant-widget__action-card">
+      <div className="assistant-widget__action-card-head">
+        <div>
+          <strong>
+            {actionCard.actionLabel}
+            {actionCard.resourceLabel}
+          </strong>
+          <span>{actionCard.summary}</span>
+        </div>
+        <span className={`assistant-widget__action-badge is-${actionCard.status.toLowerCase()}`}>
+          {actionCard.status}
+        </span>
+      </div>
+
+      {actionCard.targetLabel ? (
+        <div className="assistant-widget__action-target">
+          目标对象：{actionCard.targetLabel}
+        </div>
+      ) : null}
+
+      {actionCard.missingFields.length > 0 ? (
+        <div className="assistant-widget__action-section">
+          <strong>待补充字段</strong>
+          <ul>
+            {actionCard.missingFields.map((field) => (
+              <li key={field.field}>
+                {field.label}
+                {field.hint ? `：${field.hint}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {actionCard.previewFields.length > 0 ? (
+        <div className="assistant-widget__action-section">
+          <strong>变更预览</strong>
+          <div className="assistant-widget__action-preview">
+            {actionCard.previewFields.map((field) => (
+              <div key={field.field} className="assistant-widget__action-preview-item">
+                <span>{field.label}</span>
+                <strong>{field.value || '-'}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {actionCard.status === 'READY' ? (
+        <div className="assistant-widget__action-actions">
+          {requiresDeleteText ? (
+            <input
+              value={confirmationText}
+              placeholder={actionCard.confirmationTextHint ?? '请输入确认文本'}
+              onChange={(event) => onChangeConfirmationText(event.target.value)}
+            />
+          ) : null}
+          <button type="button" disabled={!canConfirm || isExecuting} onClick={onConfirm}>
+            {isExecuting ? '执行中...' : '确认执行'}
+          </button>
         </div>
       ) : null}
     </section>

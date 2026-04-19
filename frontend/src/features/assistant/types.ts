@@ -28,6 +28,7 @@ export interface AssistantMessage {
   content: string
   messageType: string
   resultBlocks?: AssistantResultBlock[] | null
+  actionCard?: AssistantActionCard | null
   createdAt: string
 }
 
@@ -42,4 +43,37 @@ export interface AssistantChatPayload {
   message: string
   routePath?: string
   routeTitle?: string
+}
+
+export interface AssistantActionFieldPrompt {
+  field: string
+  label: string
+  hint?: string | null
+}
+
+export interface AssistantActionFieldValue {
+  field: string
+  label: string
+  value: string
+}
+
+export interface AssistantActionCard {
+  actionCode: string
+  status: string
+  resourceType: string
+  resourceLabel: string
+  actionType: string
+  actionLabel: string
+  targetLabel?: string | null
+  summary: string
+  riskLevel: string
+  confirmationMode: string
+  confirmationTextHint?: string | null
+  missingFields: AssistantActionFieldPrompt[]
+  previewFields: AssistantActionFieldValue[]
+}
+
+export interface AssistantActionExecuteResponse {
+  session: AssistantSessionListItem
+  assistantMessage: AssistantMessage
 }

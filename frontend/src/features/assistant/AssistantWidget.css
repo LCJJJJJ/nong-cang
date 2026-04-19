@@ -393,6 +393,149 @@
   padding-top: 14px;
 }
 
+.assistant-widget__action-card {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #dcdfe6;
+  background: #f8fafb;
+}
+
+.assistant-widget__action-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  strong {
+    display: block;
+    font-size: 13px;
+    color: #303133;
+  }
+
+  span {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #606266;
+  }
+}
+
+.assistant-widget__action-badge {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #ecf5ff;
+  color: #006d37;
+}
+
+.assistant-widget__action-badge.is-draft {
+  background: #fff7e6;
+  color: #b26a00;
+}
+
+.assistant-widget__action-badge.is-ready {
+  background: #ecf5ff;
+  color: #006d37;
+}
+
+.assistant-widget__action-badge.is-executed {
+  background: #f0f9eb;
+  color: #409eff;
+}
+
+.assistant-widget__action-badge.is-failed {
+  background: rgba(245, 108, 108, 0.12);
+  color: #ba1a1a;
+}
+
+.assistant-widget__action-target {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #303133;
+}
+
+.assistant-widget__action-section {
+  margin-top: 12px;
+
+  strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #303133;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #606266;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+}
+
+.assistant-widget__action-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.assistant-widget__action-preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #ebeef5;
+
+  span {
+    font-size: 12px;
+    color: #606266;
+  }
+
+  strong {
+    font-size: 12px;
+    color: #303133;
+  }
+}
+
+.assistant-widget__action-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+
+  input {
+    flex: 1 1 auto;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #dcdfe6;
+    background: #ffffff;
+    color: #303133;
+    font-size: 13px;
+  }
+
+  button {
+    min-width: 112px;
+    height: 40px;
+    padding: 0 16px;
+    border: 0;
+    background: #006d37;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .assistant-widget__result-head {
   display: flex;
   align-items: flex-start;

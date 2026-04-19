@@ -9,6 +9,7 @@ public record AssistantMessageResponse(
 		String content,
 		String messageType,
 		List<AssistantResultBlockResponse> resultBlocks,
+		AssistantActionCardResponse actionCard,
 		String createdAt) {
 
 	public record AssistantResultBlockResponse(
@@ -18,5 +19,33 @@ public record AssistantMessageResponse(
 			String routeLabel,
 			List<AssistantColumnResponse> columns,
 			List<Map<String, String>> rows) {
+	}
+
+	public record AssistantActionCardResponse(
+			String actionCode,
+			String status,
+			String resourceType,
+			String resourceLabel,
+			String actionType,
+			String actionLabel,
+			String targetLabel,
+			String summary,
+			String riskLevel,
+			String confirmationMode,
+			String confirmationTextHint,
+			List<AssistantActionFieldPromptResponse> missingFields,
+			List<AssistantActionFieldValueResponse> previewFields) {
+	}
+
+	public record AssistantActionFieldPromptResponse(
+			String field,
+			String label,
+			String hint) {
+	}
+
+	public record AssistantActionFieldValueResponse(
+			String field,
+			String label,
+			String value) {
 	}
 }

@@ -19,6 +19,7 @@ public class AssistantToolRegistry {
 	private final AssistantInventoryQueryService assistantInventoryQueryService;
 	private final AssistantQualityQueryService assistantQualityQueryService;
 	private final AssistantAlertQueryService assistantAlertQueryService;
+	private final AssistantBasicInfoWriteToolService assistantBasicInfoWriteToolService;
 
 	public AssistantToolRegistry(
 			ObjectMapper objectMapper,
@@ -28,7 +29,8 @@ public class AssistantToolRegistry {
 			AssistantOutboundQueryService assistantOutboundQueryService,
 			AssistantInventoryQueryService assistantInventoryQueryService,
 			AssistantQualityQueryService assistantQualityQueryService,
-			AssistantAlertQueryService assistantAlertQueryService) {
+			AssistantAlertQueryService assistantAlertQueryService,
+			AssistantBasicInfoWriteToolService assistantBasicInfoWriteToolService) {
 		this.objectMapper = objectMapper;
 		this.assistantBasicQueryService = assistantBasicQueryService;
 		this.assistantWarehouseQueryService = assistantWarehouseQueryService;
@@ -37,6 +39,7 @@ public class AssistantToolRegistry {
 		this.assistantInventoryQueryService = assistantInventoryQueryService;
 		this.assistantQualityQueryService = assistantQualityQueryService;
 		this.assistantAlertQueryService = assistantAlertQueryService;
+		this.assistantBasicInfoWriteToolService = assistantBasicInfoWriteToolService;
 	}
 
 	public List<Map<String, Object>> getToolDefinitions() {
@@ -62,6 +65,8 @@ public class AssistantToolRegistry {
 				buildQueryTool(
 						"query_alert_message_data",
 						"查询预警与消息业务，可查询 entityType 为 alert_rule、alert_record、message_notice。"),
+				buildWritePrepareTool(),
+				buildWriteExecuteTool(),
 				Map.of(
 						"type", "function",
 						"function", Map.of(
@@ -73,7 +78,7 @@ public class AssistantToolRegistry {
 										"additionalProperties", false))));
 	}
 
-	public AssistantToolExecutionResult execute(AssistantToolCall toolCall, int maxRows) {
+	public AssistantToolExecutionResult execute(AssistantToolCall toolCall, int maxRows, Long sessionId, Long userId) {
 		return switch (toolCall.name()) {
 			case "query_basic_master_data" -> assistantBasicQueryService.execute(parseArguments(toolCall.argumentsJson()), maxRows);
 			case "query_warehouse_data" -> assistantWarehouseQueryService.execute(parseArguments(toolCall.argumentsJson()), maxRows);
@@ -82,6 +87,8 @@ public class AssistantToolRegistry {
 			case "query_inventory_data" -> assistantInventoryQueryService.execute(parseArguments(toolCall.argumentsJson()), maxRows);
 			case "query_quality_loss_data" -> assistantQualityQueryService.execute(parseArguments(toolCall.argumentsJson()), maxRows);
 			case "query_alert_message_data" -> assistantAlertQueryService.execute(parseArguments(toolCall.argumentsJson()), maxRows);
+			case "prepare_basic_info_write_action" -> assistantBasicInfoWriteToolService.prepare(sessionId, userId, toolCall.argumentsJson());
+			case "execute_basic_info_write_action" -> assistantBasicInfoWriteToolService.execute(userId, toolCall.argumentsJson());
 			case "refresh_alerts" -> assistantAlertQueryService.refreshAlerts();
 			default -> throw new BusinessException(CommonErrorCode.ASSISTANT_TOOL_INVALID, "智能助手工具不存在");
 		};
@@ -118,5 +125,38 @@ public class AssistantToolRegistry {
 		} catch (Exception exception) {
 			throw new BusinessException(CommonErrorCode.ASSISTANT_TOOL_INVALID, "智能助手工具参数解析失败");
 		}
+	}
+
+	private Map<String, Object> buildWritePrepareTool() {
+		return Map.of(
+				"type", "function",
+				"function", Map.of(
+						"name", "prepare_basic_info_write_action",
+						"description",
+						"为农产品基础信息管理模块准备写操作计划。只要用户要新增、修改或删除，都必须优先调用此工具。resourceType 可选 category、product_archive、product_unit、product_origin、storage_condition、quality_grade；actionType 可选 CREATE、UPDATE、DELETE。fields 可以直接填写中文字段含义和值，引用字段允许直接传名称，例如分类名称、单位名称、产地名称、储存条件名称、品质等级名称，后端会自动解析。",
+						"parameters", Map.of(
+								"type", "object",
+								"properties", Map.of(
+										"actionCode", Map.of("type", "string"),
+										"resourceType", Map.of("type", "string"),
+										"actionType", Map.of("type", "string"),
+										"target", Map.of("type", "string"),
+										"fields", Map.of("type", "object")),
+								"additionalProperties", false)));
+	}
+
+	private Map<String, Object> buildWriteExecuteTool() {
+		return Map.of(
+				"type", "function",
+				"function", Map.of(
+						"name", "execute_basic_info_write_action",
+						"description", "在用户已经明确确认后执行农产品基础信息模块的写操作。",
+						"parameters", Map.of(
+								"type", "object",
+								"properties", Map.of(
+										"actionCode", Map.of("type", "string"),
+										"confirmationText", Map.of("type", "string")),
+								"required", List.of("actionCode"),
+								"additionalProperties", false)));
 	}
 }

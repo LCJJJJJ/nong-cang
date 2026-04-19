@@ -3,6 +3,7 @@ import { AppError } from '../../api/errors'
 import { getAccessToken } from '../auth/storage'
 
 import type {
+  AssistantActionExecuteResponse,
   AssistantChatPayload,
   AssistantChatResponse,
   AssistantMessage,
@@ -94,6 +95,17 @@ export async function streamAssistantChat(
       break
     }
   }
+}
+
+export function executeAssistantAction(
+  actionCode: string,
+  confirmationText?: string,
+) {
+  return request<AssistantActionExecuteResponse>({
+    method: 'PATCH',
+    url: `/assistant/action-plans/${actionCode}/execute`,
+    data: confirmationText ? { confirmationText } : {},
+  })
 }
 
 function handleSseEvent(rawEvent: string, handlers: AssistantStreamHandlers) {
