@@ -83,6 +83,10 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
       return
     }
 
+    if (isSending) {
+      return
+    }
+
     let isMounted = true
 
     const loadMessages = async () => {
@@ -112,7 +116,7 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
     return () => {
       isMounted = false
     }
-  }, [activeSessionId, isOpen])
+  }, [activeSessionId, isOpen, isSending])
 
   useEffect(() => {
     if (!isOpen) {
@@ -231,19 +235,26 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
           },
           onDone: (response) => {
             setActiveSessionId(response.session.id)
-            setMessages((current) =>
-              current.map((item) => {
-                if (item.id === tempUserId) {
-                  return response.userMessage
-                }
+            setMessages((current) => {
+              const hasTempUser = current.some((item) => item.id === tempUserId)
+              const hasTempAssistant = current.some((item) => item.id === tempAssistantId)
 
-                if (item.id === tempAssistantId) {
-                  return response.assistantMessage
-                }
+              if (hasTempUser || hasTempAssistant) {
+                return current.map((item) => {
+                  if (item.id === tempUserId) {
+                    return response.userMessage
+                  }
 
-                return item
-              }),
-            )
+                  if (item.id === tempAssistantId) {
+                    return response.assistantMessage
+                  }
+
+                  return item
+                })
+              }
+
+              return mergeMessages([...current, response.userMessage, response.assistantMessage])
+            })
             setSessions((current) =>
               mergeSessions([
                 {
@@ -508,6 +519,18 @@ function buildDraftSession(routePath: string, routeTitle: string): AssistantSess
     lastMessagePreview: '等待发送第一条消息',
     updatedAt: new Date().toISOString(),
   }
+}
+
+function mergeMessages(messages: AssistantMessage[]) {
+  const deduplicated = new Map<string, AssistantMessage>()
+
+  messages.forEach((message) => {
+    if (!deduplicated.has(message.id)) {
+      deduplicated.set(message.id, message)
+    }
+  })
+
+  return Array.from(deduplicated.values())
 }
 
 function buildSuggestions(routePath: string, routeTitle: string) {

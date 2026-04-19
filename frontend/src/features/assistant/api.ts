@@ -72,6 +72,7 @@ export async function streamAssistantChat(
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
+  let streamCompleted = false
 
   while (true) {
     const { done, value } = await reader.read()
@@ -81,7 +82,11 @@ export async function streamAssistantChat(
     while (separatorIndex >= 0) {
       const rawEvent = buffer.slice(0, separatorIndex)
       buffer = buffer.slice(separatorIndex + 2)
-      handleSseEvent(rawEvent, handlers)
+      streamCompleted = handleSseEvent(rawEvent, handlers) || streamCompleted
+      if (streamCompleted) {
+        await reader.cancel()
+        return
+      }
       separatorIndex = buffer.indexOf('\n\n')
     }
 
@@ -103,7 +108,7 @@ function handleSseEvent(rawEvent: string, handlers: AssistantStreamHandlers) {
     .join('\n')
 
   if (!eventName || !dataText) {
-    return
+    return false
   }
 
   const data = JSON.parse(dataText) as
@@ -125,7 +130,17 @@ function handleSseEvent(rawEvent: string, handlers: AssistantStreamHandlers) {
 
   if (eventName === 'done' && handlers.onDone) {
     handlers.onDone(data as AssistantChatResponse)
+    return true
   }
+
+  if (eventName === 'error') {
+    throw new AppError({
+      code: 'STREAM_ERROR',
+      message: (data as { message?: string }).message ?? '智能助手流式调用失败',
+    })
+  }
+
+  return false
 }
 
 async function safeParseJson(response: Response) {
