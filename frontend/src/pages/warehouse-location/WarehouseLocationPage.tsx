@@ -79,6 +79,14 @@ function WarehouseLocationPage() {
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const filteredZoneOptions = warehouseZoneOptions.filter((option) =>
+    queryForm.warehouseId ? option.warehouseId === queryForm.warehouseId : true,
+  )
+
+  const filteredDialogZoneOptions = warehouseZoneOptions.filter((option) =>
+    formState.warehouseId ? option.warehouseId === formState.warehouseId : false,
+  )
+
   useEffect(() => {
     let isMounted = true
 
@@ -368,6 +376,8 @@ function WarehouseLocationPage() {
                 setQueryForm((current) => ({
                   ...current,
                   warehouseId: event.target.value,
+                  zoneId:
+                    current.warehouseId === event.target.value ? current.zoneId : '',
                 }))
               }
             >
@@ -384,6 +394,7 @@ function WarehouseLocationPage() {
             <span>所属库区</span>
             <select
               value={queryForm.zoneId}
+              disabled={!queryForm.warehouseId}
               onChange={(event) =>
                 setQueryForm((current) => ({
                   ...current,
@@ -391,8 +402,8 @@ function WarehouseLocationPage() {
                 }))
               }
             >
-              <option value="">全部库区</option>
-              {warehouseZoneOptions.map((option) => (
+              <option value="">{queryForm.warehouseId ? '全部库区' : '请先选择仓库'}</option>
+              {filteredZoneOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.label}
                 </option>
@@ -485,6 +496,8 @@ function WarehouseLocationPage() {
                     setFormState((current) => ({
                       ...current,
                       warehouseId: event.target.value,
+                      zoneId:
+                        current.warehouseId === event.target.value ? current.zoneId : '',
                     }))
                   }
                 >
@@ -501,6 +514,7 @@ function WarehouseLocationPage() {
                 <span>所属库区</span>
                 <select
                   value={formState.zoneId}
+                  disabled={!formState.warehouseId}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
@@ -508,10 +522,10 @@ function WarehouseLocationPage() {
                     }))
                   }
                 >
-                  <option value="">请选择</option>
-                  {warehouseZoneOptions.map((option) => (
+                  <option value="">{formState.warehouseId ? '请选择' : '请先选择仓库'}</option>
+                  {filteredDialogZoneOptions.map((option) => (
                     <option key={option.id} value={option.id}>
-                      {option.warehouseName} / {option.label}
+                      {option.label}
                     </option>
                   ))}
                 </select>

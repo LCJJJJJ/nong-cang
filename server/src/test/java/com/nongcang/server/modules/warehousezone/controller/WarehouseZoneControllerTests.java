@@ -68,6 +68,14 @@ class WarehouseZoneControllerTests {
 	}
 
 	@Test
+	void shouldReturnWarehouseZoneOptionsWithWarehouseId() throws Exception {
+		mockMvc.perform(get("/api/warehouse-zone/options").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data[0].warehouseId").isNotEmpty());
+	}
+
+	@Test
 	void shouldUpdateWarehouseZoneStatus() throws Exception {
 		mockMvc.perform(patch("/api/warehouse-zone/1/status")
 					.header(HttpHeaders.AUTHORIZATION, bearerToken())

@@ -55,6 +55,7 @@ public class WarehouseZoneService {
 				.filter(entity -> ENABLED == entity.status())
 				.map(entity -> new WarehouseZoneOptionResponse(
 						entity.id(),
+						entity.warehouseId(),
 						entity.zoneName(),
 						entity.warehouseName(),
 						entity.status()))

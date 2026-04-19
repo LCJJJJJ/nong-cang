@@ -19,6 +19,7 @@ export type WarehouseZoneDetail = WarehouseZoneListItem
 
 export interface WarehouseZoneOption {
   id: string
+  warehouseId: string
   label: string
   warehouseName: string
   status: number
