@@ -89,6 +89,11 @@ const navigationSections: NavigationSection[] = [
   {
     label: '库存管理',
     icon: 'inventory',
+    expanded: true,
+    children: [
+      { label: '实时库存查询', path: '/inventory-stocks' },
+      { label: '库存流水', path: '/inventory-transactions' },
+    ],
   },
   {
     label: '质量检测与损耗管理',
@@ -189,6 +194,16 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '出库记录查询',
     description:
       '查询已完成出库的最终结果，统一追踪客户、仓库、库位、产品和实际出库时间。',
+  },
+  '/inventory-stocks': {
+    title: '实时库存查询',
+    description:
+      '查看产品在仓库、库区、库位维度上的现存、预留和可用数量，为出库分配与盘点提供统一库存视图。',
+  },
+  '/inventory-transactions': {
+    title: '库存流水',
+    description:
+      '统一查询库存增减记录，覆盖入库、出库、调整和盘点等库存变化来源。',
   },
 }
 

@@ -10,6 +10,8 @@ import HomePage from '../pages/home/HomePage'
 import CustomerPage from '../pages/customer/CustomerPage'
 import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import InboundRecordPage from '../pages/inbound-record/InboundRecordPage'
+import InventoryStockPage from '../pages/inventory-stock/InventoryStockPage'
+import InventoryTransactionPage from '../pages/inventory-transaction/InventoryTransactionPage'
 import OutboundOrderPage from '../pages/outbound-order/OutboundOrderPage'
 import OutboundRecordPage from '../pages/outbound-record/OutboundRecordPage'
 import OutboundTaskPage from '../pages/outbound-task/OutboundTaskPage'
@@ -49,6 +51,11 @@ function App() {
               <Route path="/outbound-orders" element={<OutboundOrderPage />} />
               <Route path="/outbound-tasks" element={<OutboundTaskPage />} />
               <Route path="/outbound-records" element={<OutboundRecordPage />} />
+              <Route path="/inventory-stocks" element={<InventoryStockPage />} />
+              <Route
+                path="/inventory-transactions"
+                element={<InventoryTransactionPage />}
+              />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />
               <Route path="/warehouses" element={<WarehousePage />} />
