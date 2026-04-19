@@ -14,6 +14,11 @@ import type {
   AlertRecordListItem,
   AlertRecordListQuery,
 } from '../../features/alertrecord/types'
+import {
+  getAlertSeverityLabel,
+  getAlertSourceTypeLabel,
+  getAlertTypeLabel,
+} from '../../utils/alert-labels'
 import './AlertCenterPage.css'
 
 type AlertRecordRow = TreeTableRow & AlertRecordListItem
@@ -87,7 +92,7 @@ function AlertCenterPage() {
       minWidth: 100,
       render: (row) => (
         <span className={`alert-center-page__severity is-${row.severity.toLowerCase()}`}>
-          {row.severity}
+          {getAlertSeverityLabel(row.severity)}
         </span>
       ),
     },
@@ -107,7 +112,7 @@ function AlertCenterPage() {
       key: 'source',
       title: '来源',
       minWidth: 180,
-      render: (row) => `${row.sourceType} / ${row.sourceCode}`,
+      render: (row) => `${getAlertSourceTypeLabel(row.sourceType)} / ${row.sourceCode}`,
     },
     {
       key: 'status',
@@ -199,12 +204,21 @@ function AlertCenterPage() {
           </label>
           <label className="alert-center-page__field">
             <span>预警类型</span>
-            <input
+            <select
               value={queryForm.alertType}
               onChange={(event) =>
                 setQueryForm((current) => ({ ...current, alertType: event.target.value }))
               }
-            />
+            >
+              <option value="">全部类型</option>
+              <option value="LOW_STOCK">{getAlertTypeLabel('LOW_STOCK')}</option>
+              <option value="PUTAWAY_TIMEOUT">{getAlertTypeLabel('PUTAWAY_TIMEOUT')}</option>
+              <option value="OUTBOUND_PICK_TIMEOUT">{getAlertTypeLabel('OUTBOUND_PICK_TIMEOUT')}</option>
+              <option value="OUTBOUND_SHIP_TIMEOUT">{getAlertTypeLabel('OUTBOUND_SHIP_TIMEOUT')}</option>
+              <option value="ABNORMAL_STOCK_STAGNANT">{getAlertTypeLabel('ABNORMAL_STOCK_STAGNANT')}</option>
+              <option value="STOCKTAKING_CONFIRM_TIMEOUT">{getAlertTypeLabel('STOCKTAKING_CONFIRM_TIMEOUT')}</option>
+              <option value="INBOUND_PENDING_INSPECTION">{getAlertTypeLabel('INBOUND_PENDING_INSPECTION')}</option>
+            </select>
           </label>
           <label className="alert-center-page__field">
             <span>级别</span>
@@ -215,9 +229,9 @@ function AlertCenterPage() {
               }
             >
               <option value="">全部级别</option>
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
+              <option value="LOW">{getAlertSeverityLabel('LOW')}</option>
+              <option value="MEDIUM">{getAlertSeverityLabel('MEDIUM')}</option>
+              <option value="HIGH">{getAlertSeverityLabel('HIGH')}</option>
             </select>
           </label>
           <label className="alert-center-page__field">

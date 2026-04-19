@@ -14,6 +14,10 @@ import type {
   MessageNoticeListItem,
   MessageNoticeListQuery,
 } from '../../features/messagenotice/types'
+import {
+  getAlertSeverityLabel,
+  getMessageNoticeTypeLabel,
+} from '../../utils/alert-labels'
 import './MessageNoticePage.css'
 
 type MessageNoticeRow = TreeTableRow & MessageNoticeListItem
@@ -86,9 +90,15 @@ function MessageNoticePage() {
       minWidth: 100,
       render: (row) => (
         <span className={`message-notice-page__severity is-${row.severity.toLowerCase()}`}>
-          {row.severity}
+          {getAlertSeverityLabel(row.severity)}
         </span>
       ),
+    },
+    {
+      key: 'noticeType',
+      title: '消息类型',
+      minWidth: 140,
+      render: (row) => getMessageNoticeTypeLabel(row.noticeType),
     },
     {
       key: 'title',
@@ -194,9 +204,9 @@ function MessageNoticePage() {
               }
             >
               <option value="">全部级别</option>
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
+              <option value="LOW">{getAlertSeverityLabel('LOW')}</option>
+              <option value="MEDIUM">{getAlertSeverityLabel('MEDIUM')}</option>
+              <option value="HIGH">{getAlertSeverityLabel('HIGH')}</option>
             </select>
           </label>
           <label className="message-notice-page__field">

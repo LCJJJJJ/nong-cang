@@ -18,6 +18,11 @@ import type {
   AlertRuleListQuery,
   AlertRuleUpdatePayload,
 } from '../../features/alertrule/types'
+import {
+  getAlertSeverityLabel,
+  getAlertThresholdUnitLabel,
+  getAlertTypeLabel,
+} from '../../utils/alert-labels'
 import './AlertRulePage.css'
 
 type AlertRuleRow = TreeTableRow & AlertRuleListItem
@@ -115,19 +120,19 @@ function AlertRulePage() {
       key: 'alertType',
       title: '预警类型',
       minWidth: 180,
-      render: (row) => row.alertType,
+      render: (row) => getAlertTypeLabel(row.alertType),
     },
     {
       key: 'severity',
       title: '严重级别',
       minWidth: 120,
-      render: (row) => row.severity,
+      render: (row) => getAlertSeverityLabel(row.severity),
     },
     {
       key: 'thresholdValue',
       title: '阈值',
       minWidth: 140,
-      render: (row) => `${row.thresholdValue} ${row.thresholdUnit}`,
+      render: (row) => `${row.thresholdValue} ${getAlertThresholdUnitLabel(row.thresholdUnit)}`,
     },
     {
       key: 'enabled',
@@ -357,9 +362,9 @@ function AlertRulePage() {
                     }))
                   }
                 >
-                  <option value="LOW">LOW</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="HIGH">HIGH</option>
+                  <option value="LOW">{getAlertSeverityLabel('LOW')}</option>
+                  <option value="MEDIUM">{getAlertSeverityLabel('MEDIUM')}</option>
+                  <option value="HIGH">{getAlertSeverityLabel('HIGH')}</option>
                 </select>
                 <small>{getFieldError(formError?.fieldErrors, 'severity')}</small>
               </label>
