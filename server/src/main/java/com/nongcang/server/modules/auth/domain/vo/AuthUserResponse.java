@@ -7,5 +7,8 @@ public record AuthUserResponse(
 		String username,
 		String displayName,
 		String phone,
+		String roleCode,
+		Long warehouseId,
+		String warehouseName,
 		List<String> roles) {
 }

@@ -1,0 +1,84 @@
+.role-overview-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.role-overview-page__intro,
+.role-overview-page__card {
+  background: #ffffff;
+}
+
+.role-overview-page__intro {
+  padding: 24px;
+}
+
+.role-overview-page__intro h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #191c1d;
+}
+
+.role-overview-page__intro p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #3d4a3f;
+}
+
+.role-overview-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .role-overview-page__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.role-overview-page__card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+}
+
+.role-overview-page__card h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #191c1d;
+}
+
+.role-overview-page__card p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.7;
+}
+
+.role-overview-page__section {
+  display: grid;
+  gap: 8px;
+}
+
+.role-overview-page__section strong {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #3d4a3f;
+  text-transform: uppercase;
+}
+
+.role-overview-page__section span,
+.role-overview-page__section li {
+  font-size: 14px;
+  color: #303133;
+}
+
+.role-overview-page__section ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}

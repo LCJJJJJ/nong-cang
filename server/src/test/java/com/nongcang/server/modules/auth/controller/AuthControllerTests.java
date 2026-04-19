@@ -45,7 +45,27 @@ class AuthControllerTests {
 				.andExpect(jsonPath("$.data.accessToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.refreshToken").isNotEmpty())
 				.andExpect(jsonPath("$.data.user.userId").value("1"))
-				.andExpect(jsonPath("$.data.user.username").value("admin"));
+				.andExpect(jsonPath("$.data.user.username").value("admin"))
+				.andExpect(jsonPath("$.data.user.roleCode").value("ADMIN"))
+				.andExpect(jsonPath("$.data.user.warehouseId").isEmpty());
+	}
+
+	@Test
+	void shouldLoginWarehouseAdminSuccessfully() throws Exception {
+		mockMvc.perform(post("/api/auth/login")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "account": "warehouse_admin",
+							  "password": "Warehouse@123456"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.user.username").value("warehouse_admin"))
+				.andExpect(jsonPath("$.data.user.roleCode").value("WAREHOUSE_ADMIN"))
+				.andExpect(jsonPath("$.data.user.warehouseId").isNotEmpty())
+				.andExpect(jsonPath("$.data.user.warehouseName").isNotEmpty());
 	}
 
 	@Test
@@ -94,7 +114,8 @@ class AuthControllerTests {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data.userId").value("1"))
 				.andExpect(jsonPath("$.data.username").value("admin"))
-				.andExpect(jsonPath("$.data.displayName").value("系统管理员"));
+				.andExpect(jsonPath("$.data.displayName").value("系统管理员"))
+				.andExpect(jsonPath("$.data.roleCode").value("ADMIN"));
 	}
 
 	private String loginAndRead(String fieldName) throws Exception {

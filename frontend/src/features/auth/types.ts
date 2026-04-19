@@ -9,6 +9,9 @@ export interface AuthUser {
   username: string
   displayName: string
   phone: string
+  roleCode: string
+  warehouseId: string | null
+  warehouseName: string | null
   roles: string[]
 }
 

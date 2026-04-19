@@ -10,7 +10,10 @@ import com.nongcang.server.modules.auth.domain.dto.LoginRequest;
 import com.nongcang.server.modules.auth.domain.dto.RefreshTokenRequest;
 import com.nongcang.server.modules.auth.domain.vo.AuthTokenResponse;
 import com.nongcang.server.modules.auth.domain.vo.AuthUserResponse;
+import com.nongcang.server.modules.systemuser.domain.entity.SystemUserEntity;
+import com.nongcang.server.modules.systemuser.repository.SystemUserRepository;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,17 +23,30 @@ public class AuthService {
 
 	private final JwtTokenService jwtTokenService;
 
-	public AuthService(AuthProperties authProperties, JwtTokenService jwtTokenService) {
+	private final SystemUserRepository systemUserRepository;
+
+	private final PasswordEncoder passwordEncoder;
+
+	public AuthService(
+			AuthProperties authProperties,
+			JwtTokenService jwtTokenService,
+			SystemUserRepository systemUserRepository,
+			PasswordEncoder passwordEncoder) {
 		this.authProperties = authProperties;
 		this.jwtTokenService = jwtTokenService;
+		this.systemUserRepository = systemUserRepository;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	public AuthTokenResponse login(LoginRequest loginRequest) {
-		if (!matchesAccount(loginRequest.account()) || !matchesPassword(loginRequest.password())) {
+		SystemUserEntity user = systemUserRepository.findByAccount(loginRequest.account())
+				.orElseThrow(() -> new BusinessException(CommonErrorCode.INVALID_CREDENTIALS));
+
+		if (user.status() != 1 || !passwordEncoder.matches(loginRequest.password(), user.passwordHash())) {
 			throw new BusinessException(CommonErrorCode.INVALID_CREDENTIALS);
 		}
 
-		return jwtTokenService.issueTokens(buildDemoUser());
+		return jwtTokenService.issueTokens(toAuthenticatedUser(user));
 	}
 
 	public AuthTokenResponse refresh(RefreshTokenRequest refreshTokenRequest) {
@@ -46,20 +62,15 @@ public class AuthService {
 		return jwtTokenService.toUserResponse(authenticatedUser);
 	}
 
-	private boolean matchesAccount(String account) {
-		return authProperties.getAdminUsername().equals(account) || authProperties.getAdminPhone().equals(account);
-	}
-
-	private boolean matchesPassword(String password) {
-		return authProperties.getAdminPassword().equals(password);
-	}
-
-	private AuthenticatedUser buildDemoUser() {
+	private AuthenticatedUser toAuthenticatedUser(SystemUserEntity user) {
 		return new AuthenticatedUser(
-				authProperties.getAdminUserId(),
-				authProperties.getAdminUsername(),
-				authProperties.getAdminDisplayName(),
-				authProperties.getAdminPhone(),
-				List.of("ADMIN"));
+				user.id(),
+				user.username(),
+				user.displayName(),
+				user.phone(),
+				user.roleCode(),
+				user.warehouseId(),
+				user.warehouseName(),
+				List.of(user.roleCode()));
 	}
 }

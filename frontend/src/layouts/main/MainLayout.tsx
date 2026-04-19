@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import AssistantWidget from '../../features/assistant/AssistantWidget'
+import { isPathAllowed } from '../../features/auth/role-access'
 import { useAuthSession } from '../../features/auth/useAuthSession'
 import './MainLayout.css'
 
@@ -21,6 +22,7 @@ interface NavigationChildItem {
   label: string
   path?: string
   active?: boolean
+  allowedRoles?: string[]
 }
 
 interface NavigationSection {
@@ -34,6 +36,11 @@ const navigationSections: NavigationSection[] = [
   {
     label: '用户与权限管理',
     icon: 'user',
+    expanded: true,
+    children: [
+      { label: '用户管理', path: '/system-users', allowedRoles: ['ADMIN'] },
+      { label: '角色说明', path: '/role-overview', allowedRoles: ['ADMIN'] },
+    ],
   },
   {
     label: '农产品基础信息管理',
@@ -134,6 +141,16 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '产品档案管理',
     description:
       '维护农产品主数据档案，统一挂接分类、单位、产地、储存条件和品质等级，并直接维护保质期信息。',
+  },
+  '/system-users': {
+    title: '用户管理',
+    description:
+      '维护系统用户、分配固定角色并绑定负责仓库，当前采用一人一角色一仓库的权限模型。',
+  },
+  '/role-overview': {
+    title: '角色说明',
+    description:
+      '查看当前 4 类核心角色的职责边界、仓库规则和可访问模块，便于管理员分配用户。',
   },
   '/storage-conditions': {
     title: '储存条件管理',
@@ -284,16 +301,33 @@ function MainLayout() {
     () =>
       navigationSections.map((section) => ({
         ...section,
-        children: section.children?.map((child) => ({
-          ...child,
-          active: child.path === location.pathname,
-        })),
+        children: section.children
+          ?.filter(
+            (child) =>
+              !child.path ||
+              !child.allowedRoles ||
+              child.allowedRoles.includes(user?.roleCode ?? ''),
+          )
+          .filter((child) => !child.path || isPathAllowed(user?.roleCode, child.path))
+          .map((child) => ({
+            ...child,
+            active: child.path === location.pathname,
+          })),
         isExpanded: section.children?.length
           ? Boolean(expandedSections[section.label]) ||
             Boolean(section.children?.some((child) => child.path === location.pathname))
           : false,
       })),
-    [expandedSections, location.pathname],
+    [expandedSections, location.pathname, user?.roleCode],
+  )
+
+  const mobileQuickLinks = useMemo(
+    () =>
+      resolvedSections
+        .flatMap((section) => section.children ?? [])
+        .filter((child) => child.path)
+        .slice(0, 5),
+    [resolvedSections],
   )
 
   const handleLogout = () => {
@@ -328,6 +362,7 @@ function MainLayout() {
 
         <nav className="main-layout__menu" aria-label="主导航">
           {resolvedSections.map((section) => (
+            section.children && section.children.length === 0 ? null : (
             <div key={section.label} className="main-layout__menu-group">
               <button
                 type="button"
@@ -385,6 +420,7 @@ function MainLayout() {
                 </div>
               ) : null}
             </div>
+            )
           ))}
         </nav>
       </aside>
@@ -435,23 +471,20 @@ function MainLayout() {
         </header>
 
         <div className="main-layout__mobile-tabs" aria-label="移动端菜单">
-          <button
-            type="button"
-            className={location.pathname === '/' ? 'is-active' : ''}
-            onClick={() => navigate('/')}
-          >
-            产品分类管理
-          </button>
-          <button type="button">产品档案管理</button>
-          <button
-            type="button"
-            className={location.pathname === '/storage-conditions' ? 'is-active' : ''}
-            onClick={() => navigate('/storage-conditions')}
-          >
-            储存条件管理
-          </button>
-          <button type="button">仓库管理</button>
-          <button type="button">库存管理</button>
+          {mobileQuickLinks.map((item) => (
+            <button
+              key={item.path}
+              type="button"
+              className={location.pathname === item.path ? 'is-active' : ''}
+              onClick={() => {
+                if (item.path) {
+                  navigate(item.path)
+                }
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         <main className="main-layout__canvas">

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { type AppError, normalizeError } from '../../../api/errors'
 import { login } from '../../../features/auth/api'
+import { getFirstAllowedPath } from '../../../features/auth/role-access'
 import { useAuthSession } from '../../../features/auth/useAuthSession'
 import { saveAuthSession } from '../../../features/auth/storage'
 import './LoginPage.css'
@@ -16,7 +17,7 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [submitMessage, setSubmitMessage] = useState(
-    '演示账号：admin / 13800000000，密码：Admin@123456',
+    '测试账号：admin / warehouse_admin / inventory_admin / quality_admin',
   )
   const [submitError, setSubmitError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,7 +41,7 @@ function LoginPage() {
 
       saveAuthSession(session)
       setAuthenticated(session.user)
-      navigate(redirectTo ?? '/', { replace: true })
+      navigate(redirectTo ?? getFirstAllowedPath(session.user.roleCode), { replace: true })
     } catch (error) {
       const appError = normalizeError(error)
       setSubmitError(appError)

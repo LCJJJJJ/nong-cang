@@ -32,6 +32,12 @@ public class JwtTokenService {
 
 	private static final String PHONE_CLAIM = "phone";
 
+	private static final String ROLE_CODE_CLAIM = "roleCode";
+
+	private static final String WAREHOUSE_ID_CLAIM = "warehouseId";
+
+	private static final String WAREHOUSE_NAME_CLAIM = "warehouseName";
+
 	private static final String ROLES_CLAIM = "roles";
 
 	private final AuthProperties authProperties;
@@ -76,6 +82,10 @@ public class JwtTokenService {
 				.claim(USER_ID_CLAIM, String.valueOf(authenticatedUser.userId()))
 				.claim(DISPLAY_NAME_CLAIM, authenticatedUser.displayName())
 				.claim(PHONE_CLAIM, authenticatedUser.phone())
+				.claim(ROLE_CODE_CLAIM, authenticatedUser.roleCode())
+				.claim(WAREHOUSE_ID_CLAIM,
+						authenticatedUser.warehouseId() == null ? null : String.valueOf(authenticatedUser.warehouseId()))
+				.claim(WAREHOUSE_NAME_CLAIM, authenticatedUser.warehouseName())
 				.claim(ROLES_CLAIM, authenticatedUser.roles())
 				.issuedAt(Date.from(Instant.now()))
 				.expiration(Date.from(expiresAt))
@@ -104,6 +114,9 @@ public class JwtTokenService {
 					claims.getSubject(),
 					claims.get(DISPLAY_NAME_CLAIM, String.class),
 					claims.get(PHONE_CLAIM, String.class),
+					claims.get(ROLE_CODE_CLAIM, String.class),
+					parseWarehouseId(claims.get(WAREHOUSE_ID_CLAIM, String.class)),
+					claims.get(WAREHOUSE_NAME_CLAIM, String.class),
 					roles == null ? List.of() : roles.stream().map(String::valueOf).toList());
 		}
 		catch (BusinessException exception) {
@@ -120,6 +133,16 @@ public class JwtTokenService {
 				authenticatedUser.username(),
 				authenticatedUser.displayName(),
 				authenticatedUser.phone(),
+				authenticatedUser.roleCode(),
+				authenticatedUser.warehouseId(),
+				authenticatedUser.warehouseName(),
 				authenticatedUser.roles());
+	}
+
+	private Long parseWarehouseId(String warehouseId) {
+		if (warehouseId == null || warehouseId.isBlank()) {
+			return null;
+		}
+		return Long.valueOf(warehouseId);
 	}
 }

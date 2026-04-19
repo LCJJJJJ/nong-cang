@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AuthSessionProvider from '../features/auth/AuthSessionProvider'
 import GuestOnlyRoute from '../features/auth/GuestOnlyRoute'
 import RequireAuth from '../features/auth/RequireAuth'
+import RoleBasedRoute from '../features/auth/RoleBasedRoute'
 import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
 import AbnormalStockPage from '../pages/abnormal-stock/AbnormalStockPage'
@@ -28,8 +29,10 @@ import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import PutawayTaskPage from '../pages/putaway-task/PutawayTaskPage'
 import QualityInspectionPage from '../pages/quality-inspection/QualityInspectionPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
+import RoleOverviewPage from '../pages/role-overview/RoleOverviewPage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 import SupplierPage from '../pages/supplier/SupplierPage'
+import SystemUserPage from '../pages/system-user/SystemUserPage'
 import WarehousePage from '../pages/warehouse/WarehousePage'
 import WarehouseLocationPage from '../pages/warehouse-location/WarehouseLocationPage'
 import WarehouseZonePage from '../pages/warehouse-zone/WarehouseZonePage'
@@ -46,46 +49,50 @@ function App() {
           </Route>
 
           <Route element={<RequireAuth />}>
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/product-archives" element={<ProductArchivePage />} />
-              <Route path="/product-origins" element={<ProductOriginPage />} />
-              <Route path="/product-units" element={<ProductUnitPage />} />
-              <Route path="/quality-grades" element={<QualityGradePage />} />
-              <Route path="/customers" element={<CustomerPage />} />
-              <Route path="/inbound-orders" element={<InboundOrderPage />} />
-              <Route path="/putaway-tasks" element={<PutawayTaskPage />} />
-              <Route path="/inbound-records" element={<InboundRecordPage />} />
-              <Route path="/outbound-orders" element={<OutboundOrderPage />} />
-              <Route path="/outbound-tasks" element={<OutboundTaskPage />} />
-              <Route path="/outbound-records" element={<OutboundRecordPage />} />
-              <Route path="/inventory-stocks" element={<InventoryStockPage />} />
-              <Route
-                path="/inventory-transactions"
-                element={<InventoryTransactionPage />}
-              />
-              <Route
-                path="/inventory-adjustments"
-                element={<InventoryAdjustmentPage />}
-              />
-              <Route
-                path="/inventory-stocktakings"
-                element={<InventoryStocktakingPage />}
-              />
-              <Route path="/alert-rules" element={<AlertRulePage />} />
-              <Route path="/alerts" element={<AlertCenterPage />} />
-              <Route path="/message-notices" element={<MessageNoticePage />} />
-              <Route path="/quality-inspections" element={<QualityInspectionPage />} />
-              <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
-              <Route path="/loss-records" element={<LossRecordPage />} />
-              <Route path="/storage-conditions" element={<StorageConditionPage />} />
-              <Route path="/suppliers" element={<SupplierPage />} />
-              <Route path="/warehouses" element={<WarehousePage />} />
-              <Route
-                path="/warehouse-locations"
-                element={<WarehouseLocationPage />}
-              />
-              <Route path="/warehouse-zones" element={<WarehouseZonePage />} />
+            <Route element={<RoleBasedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/system-users" element={<SystemUserPage />} />
+                <Route path="/role-overview" element={<RoleOverviewPage />} />
+                <Route path="/product-archives" element={<ProductArchivePage />} />
+                <Route path="/product-origins" element={<ProductOriginPage />} />
+                <Route path="/product-units" element={<ProductUnitPage />} />
+                <Route path="/quality-grades" element={<QualityGradePage />} />
+                <Route path="/customers" element={<CustomerPage />} />
+                <Route path="/inbound-orders" element={<InboundOrderPage />} />
+                <Route path="/putaway-tasks" element={<PutawayTaskPage />} />
+                <Route path="/inbound-records" element={<InboundRecordPage />} />
+                <Route path="/outbound-orders" element={<OutboundOrderPage />} />
+                <Route path="/outbound-tasks" element={<OutboundTaskPage />} />
+                <Route path="/outbound-records" element={<OutboundRecordPage />} />
+                <Route path="/inventory-stocks" element={<InventoryStockPage />} />
+                <Route
+                  path="/inventory-transactions"
+                  element={<InventoryTransactionPage />}
+                />
+                <Route
+                  path="/inventory-adjustments"
+                  element={<InventoryAdjustmentPage />}
+                />
+                <Route
+                  path="/inventory-stocktakings"
+                  element={<InventoryStocktakingPage />}
+                />
+                <Route path="/alert-rules" element={<AlertRulePage />} />
+                <Route path="/alerts" element={<AlertCenterPage />} />
+                <Route path="/message-notices" element={<MessageNoticePage />} />
+                <Route path="/quality-inspections" element={<QualityInspectionPage />} />
+                <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
+                <Route path="/loss-records" element={<LossRecordPage />} />
+                <Route path="/storage-conditions" element={<StorageConditionPage />} />
+                <Route path="/suppliers" element={<SupplierPage />} />
+                <Route path="/warehouses" element={<WarehousePage />} />
+                <Route
+                  path="/warehouse-locations"
+                  element={<WarehouseLocationPage />}
+                />
+                <Route path="/warehouse-zones" element={<WarehouseZonePage />} />
+              </Route>
             </Route>
           </Route>
 
