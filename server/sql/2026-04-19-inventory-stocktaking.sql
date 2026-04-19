@@ -54,8 +54,8 @@ SELECT
   3,
   '已完成盘点示例'
 FROM `warehouse` warehouse
-JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-20260419094454480'
-WHERE warehouse.`warehouse_code` = 'WH-20260419093735433'
+JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-202604190001'
+WHERE warehouse.`warehouse_code` = 'WH-202604190001'
   AND NOT EXISTS (
     SELECT 1 FROM `inventory_stocktaking_order` WHERE `stocktaking_code` = 'STK-202604190001'
   );
@@ -77,15 +77,15 @@ SELECT
   warehouse.`id`,
   zone.`id`,
   location.`id`,
-  49.000,
-  48.000,
-  -1.000,
+  20.000,
+  18.000,
+  -2.000,
   '已完成盘点示例明细'
 FROM `inventory_stocktaking_order` stocktaking_order
-JOIN `warehouse` warehouse ON warehouse.`warehouse_code` = 'WH-20260419093735433'
-JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-20260419094454480'
-JOIN `warehouse_location` location ON location.`location_code` = 'LOC-20260419100042806'
-JOIN `product_archive` product_archive ON product_archive.`product_code` = 'PROD-20260419083640261'
+JOIN `warehouse` warehouse ON warehouse.`warehouse_code` = 'WH-202604190001'
+JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-202604190001'
+JOIN `warehouse_location` location ON location.`location_code` = 'LOC-202604190001'
+JOIN `product_archive` product_archive ON product_archive.`product_code` = 'PROD-202604190001'
 WHERE stocktaking_order.`stocktaking_code` = 'STK-202604190001'
   AND NOT EXISTS (
     SELECT 1
@@ -98,9 +98,9 @@ WHERE stocktaking_order.`stocktaking_code` = 'STK-202604190001'
 UPDATE `inventory_stock` stock
 JOIN `product_archive` product_archive ON product_archive.`id` = stock.`product_id`
 JOIN `warehouse_location` location ON location.`id` = stock.`location_id`
-SET stock.`quantity` = 48.000
-WHERE product_archive.`product_code` = 'PROD-20260419083640261'
-  AND location.`location_code` = 'LOC-20260419100042806'
+SET stock.`quantity` = 18.000
+WHERE product_archive.`product_code` = 'PROD-202604190001'
+  AND location.`location_code` = 'LOC-202604190001'
   AND NOT EXISTS (
     SELECT 1 FROM `inventory_transaction` WHERE `transaction_code` = 'INVTX-202604190005'
   );

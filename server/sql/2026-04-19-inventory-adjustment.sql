@@ -42,27 +42,41 @@ SELECT
   location.`id`,
   product_archive.`id`,
   'INCREASE',
-  2.000,
+  20.000,
   '系统初始化修正',
   '库存调整示例'
 FROM `warehouse` warehouse
-JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-20260419094454480'
-JOIN `warehouse_location` location ON location.`location_code` = 'LOC-20260419100042806'
-JOIN `product_archive` product_archive ON product_archive.`product_code` = 'PROD-20260419083640261'
-WHERE warehouse.`warehouse_code` = 'WH-20260419093735433'
+JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-202604190001'
+JOIN `warehouse_location` location ON location.`location_code` = 'LOC-202604190001'
+JOIN `product_archive` product_archive ON product_archive.`product_code` = 'PROD-202604190001'
+WHERE warehouse.`warehouse_code` = 'WH-202604190001'
   AND NOT EXISTS (
     SELECT 1 FROM `inventory_adjustment` WHERE `adjustment_code` = 'ADJ-202604190001'
   );
 
-UPDATE `inventory_stock` stock
-JOIN `product_archive` product_archive ON product_archive.`id` = stock.`product_id`
-JOIN `warehouse_location` location ON location.`id` = stock.`location_id`
-SET stock.`quantity` = stock.`quantity` + 2.000
-WHERE product_archive.`product_code` = 'PROD-20260419083640261'
-  AND location.`location_code` = 'LOC-20260419100042806'
+INSERT INTO `inventory_stock` (
+  `product_id`,
+  `warehouse_id`,
+  `zone_id`,
+  `location_id`,
+  `quantity`
+)
+SELECT
+  product_archive.`id`,
+  warehouse.`id`,
+  zone.`id`,
+  location.`id`,
+  20.000
+FROM `warehouse` warehouse
+JOIN `warehouse_zone` zone ON zone.`zone_code` = 'ZONE-202604190001'
+JOIN `warehouse_location` location ON location.`location_code` = 'LOC-202604190001'
+JOIN `product_archive` product_archive ON product_archive.`product_code` = 'PROD-202604190001'
+WHERE warehouse.`warehouse_code` = 'WH-202604190001'
   AND NOT EXISTS (
     SELECT 1 FROM `inventory_transaction` WHERE `transaction_code` = 'INVTX-202604190004'
-  );
+  )
+ON DUPLICATE KEY UPDATE
+  `quantity` = `quantity` + VALUES(`quantity`);
 
 INSERT INTO `inventory_transaction` (
   `transaction_code`,
