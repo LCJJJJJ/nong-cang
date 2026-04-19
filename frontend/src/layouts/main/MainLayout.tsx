@@ -80,7 +80,10 @@ const navigationSections: NavigationSection[] = [
     label: '出库管理',
     icon: 'outbound',
     expanded: true,
-    children: [{ label: '出库单管理', path: '/outbound-orders' }],
+    children: [
+      { label: '出库单管理', path: '/outbound-orders' },
+      { label: '拣货出库任务管理', path: '/outbound-tasks' },
+    ],
   },
   {
     label: '库存管理',
@@ -175,6 +178,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '出库单管理',
     description:
       '维护待出库业务单据，统一关联客户、仓库和产品明细，为后续拣货出库任务提供业务入口。',
+  },
+  '/outbound-tasks': {
+    title: '拣货出库任务管理',
+    description:
+      '承接出库单明细，完成库存分配、拣货确认和最终出库扣减，作为库存减少的直接入口。',
   },
 }
 

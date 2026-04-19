@@ -3,6 +3,9 @@ package com.nongcang.server.modules.inventorysupport.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import com.nongcang.server.common.exception.BusinessException;
+import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.modules.outboundtask.domain.entity.OutboundTaskEntity;
 import com.nongcang.server.modules.inventorysupport.repository.InventoryStockRepository;
 import com.nongcang.server.modules.inventorysupport.repository.InventoryTransactionRepository;
 import com.nongcang.server.modules.putawaytask.domain.entity.PutawayTaskEntity;
@@ -34,6 +37,7 @@ public class InventoryStockService {
 
 		inventoryTransactionRepository.insertTransaction(
 				generateTransactionCode(),
+				"INBOUND",
 				task.productId(),
 				task.warehouseId(),
 				task.zoneId(),
@@ -42,6 +46,32 @@ public class InventoryStockService {
 				"PUTAWAY_TASK",
 				task.id(),
 				LocalDateTime.now(),
+				task.remarks());
+	}
+
+	public void recordOutbound(OutboundTaskEntity task) {
+		boolean decreased = inventoryStockRepository.decreaseStock(
+				task.productId(),
+				task.warehouseId(),
+				task.zoneId(),
+				task.locationId(),
+				task.quantity());
+
+		if (!decreased) {
+			throw new BusinessException(CommonErrorCode.OUTBOUND_TASK_STOCK_INSUFFICIENT);
+		}
+
+		inventoryTransactionRepository.insertTransaction(
+				generateTransactionCode(),
+				"OUTBOUND",
+				task.productId(),
+				task.warehouseId(),
+				task.zoneId(),
+				task.locationId(),
+				task.quantity().negate(),
+				"OUTBOUND_TASK",
+				task.id(),
+				task.completedAt() == null ? LocalDateTime.now() : task.completedAt(),
 				task.remarks());
 	}
 

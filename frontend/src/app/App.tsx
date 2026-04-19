@@ -11,6 +11,7 @@ import CustomerPage from '../pages/customer/CustomerPage'
 import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import InboundRecordPage from '../pages/inbound-record/InboundRecordPage'
 import OutboundOrderPage from '../pages/outbound-order/OutboundOrderPage'
+import OutboundTaskPage from '../pages/outbound-task/OutboundTaskPage'
 import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
@@ -45,6 +46,7 @@ function App() {
               <Route path="/putaway-tasks" element={<PutawayTaskPage />} />
               <Route path="/inbound-records" element={<InboundRecordPage />} />
               <Route path="/outbound-orders" element={<OutboundOrderPage />} />
+              <Route path="/outbound-tasks" element={<OutboundTaskPage />} />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />
               <Route path="/warehouses" element={<WarehousePage />} />

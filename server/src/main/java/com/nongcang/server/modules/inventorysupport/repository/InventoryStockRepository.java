@@ -1,13 +1,33 @@
 package com.nongcang.server.modules.inventorysupport.repository;
 
 import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
 
+import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryLocationStockEntity;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class InventoryStockRepository {
+
+	private static final RowMapper<InventoryLocationStockEntity> INVENTORY_LOCATION_STOCK_ROW_MAPPER = new RowMapper<>() {
+		@Override
+		public InventoryLocationStockEntity mapRow(ResultSet rs, int rowNum) throws SQLException {
+			return new InventoryLocationStockEntity(
+					rs.getLong("warehouse_id"),
+					rs.getLong("zone_id"),
+					rs.getString("zone_name"),
+					rs.getLong("location_id"),
+					rs.getString("location_name"),
+					rs.getBigDecimal("stock_quantity"),
+					rs.getBigDecimal("reserved_quantity"),
+					rs.getBigDecimal("available_quantity"));
+		}
+	};
 
 	private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
@@ -44,5 +64,78 @@ public class InventoryStockRepository {
 				.addValue("zoneId", zoneId)
 				.addValue("locationId", locationId)
 				.addValue("quantity", quantity));
+	}
+
+	public boolean decreaseStock(
+			Long productId,
+			Long warehouseId,
+			Long zoneId,
+			Long locationId,
+			BigDecimal quantity) {
+		int updatedRows = namedParameterJdbcTemplate.update("""
+				UPDATE inventory_stock
+				SET quantity = quantity - :quantity
+				WHERE product_id = :productId
+				  AND warehouse_id = :warehouseId
+				  AND zone_id = :zoneId
+				  AND location_id = :locationId
+				  AND quantity >= :quantity
+				""", new MapSqlParameterSource()
+				.addValue("productId", productId)
+				.addValue("warehouseId", warehouseId)
+				.addValue("zoneId", zoneId)
+				.addValue("locationId", locationId)
+				.addValue("quantity", quantity));
+		return updatedRows > 0;
+	}
+
+	public List<InventoryLocationStockEntity> findAvailableStocks(
+			Long productId,
+			Long warehouseId,
+			Long excludeTaskId) {
+		return namedParameterJdbcTemplate.query("""
+				SELECT
+				  s.warehouse_id,
+				  s.zone_id,
+				  wz.zone_name,
+				  s.location_id,
+				  wl.location_name,
+				  s.quantity AS stock_quantity,
+				  COALESCE(SUM(
+				    CASE
+				      WHEN ot.status IN (2, 3) AND ot.id <> :excludeTaskId THEN ot.quantity
+				      ELSE 0
+				    END
+				  ), 0) AS reserved_quantity,
+				  GREATEST(
+				    s.quantity - COALESCE(SUM(
+				      CASE
+				        WHEN ot.status IN (2, 3) AND ot.id <> :excludeTaskId THEN ot.quantity
+				        ELSE 0
+				      END
+				    ), 0),
+				    0
+				  ) AS available_quantity
+				FROM inventory_stock s
+				JOIN warehouse_zone wz ON wz.id = s.zone_id
+				JOIN warehouse_location wl ON wl.id = s.location_id
+				LEFT JOIN outbound_task ot
+				  ON ot.product_id = s.product_id
+				 AND ot.location_id = s.location_id
+				WHERE s.product_id = :productId
+				  AND s.warehouse_id = :warehouseId
+				  AND s.quantity > 0
+				GROUP BY
+				  s.warehouse_id,
+				  s.zone_id,
+				  wz.zone_name,
+				  s.location_id,
+				  wl.location_name,
+				  s.quantity
+				ORDER BY wz.zone_name ASC, wl.location_name ASC
+				""", new MapSqlParameterSource()
+				.addValue("productId", productId)
+				.addValue("warehouseId", warehouseId)
+				.addValue("excludeTaskId", excludeTaskId == null ? -1L : excludeTaskId), INVENTORY_LOCATION_STOCK_ROW_MAPPER);
 	}
 }

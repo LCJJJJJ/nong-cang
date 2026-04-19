@@ -10,6 +10,7 @@ import java.util.Objects;
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
 import com.nongcang.server.modules.customer.repository.CustomerRepository;
+import com.nongcang.server.modules.outboundtask.service.OutboundTaskService;
 import com.nongcang.server.modules.outboundorder.domain.dto.OutboundOrderCreateRequest;
 import com.nongcang.server.modules.outboundorder.domain.dto.OutboundOrderItemRequest;
 import com.nongcang.server.modules.outboundorder.domain.dto.OutboundOrderListQueryRequest;
@@ -42,16 +43,19 @@ public class OutboundOrderService {
 	private final CustomerRepository customerRepository;
 	private final WarehouseRepository warehouseRepository;
 	private final ProductArchiveRepository productArchiveRepository;
+	private final OutboundTaskService outboundTaskService;
 
 	public OutboundOrderService(
 			OutboundOrderRepository outboundOrderRepository,
 			CustomerRepository customerRepository,
 			WarehouseRepository warehouseRepository,
-			ProductArchiveRepository productArchiveRepository) {
+			ProductArchiveRepository productArchiveRepository,
+			OutboundTaskService outboundTaskService) {
 		this.outboundOrderRepository = outboundOrderRepository;
 		this.customerRepository = customerRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.productArchiveRepository = productArchiveRepository;
+		this.outboundTaskService = outboundTaskService;
 	}
 
 	public List<OutboundOrderListItemResponse> getOutboundOrderList(OutboundOrderListQueryRequest queryRequest) {
@@ -134,6 +138,16 @@ public class OutboundOrderService {
 		OutboundOrderEntity currentOrder = getExistingOutboundOrder(id);
 		ensurePendingAllocate(currentOrder.status(), "当前出库单状态不允许取消");
 		outboundOrderRepository.updateStatus(id, STATUS_CANCELLED, currentOrder.actualOutboundAt());
+	}
+
+	@Transactional
+	public void dispatchOutboundOrder(Long id) {
+		OutboundOrderEntity currentOrder = getExistingOutboundOrder(id);
+		ensurePendingAllocate(currentOrder.status(), "当前出库单状态不允许生成拣货任务");
+		List<OutboundOrderItemEntity> items = outboundOrderRepository.findItemsByOrderId(id);
+		outboundOrderRepository.updateStatus(id, STATUS_WAIT_PICK, null);
+		OutboundOrderEntity updatedOrder = getExistingOutboundOrder(id);
+		outboundTaskService.createTasksForOutboundOrder(updatedOrder, items);
 	}
 
 	private OutboundOrderEntity getExistingOutboundOrder(Long id) {

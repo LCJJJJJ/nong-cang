@@ -47,3 +47,10 @@ export function cancelOutboundOrder(outboundOrderId: string) {
     url: `/outbound-order/${outboundOrderId}/cancel`,
   })
 }
+
+export function dispatchOutboundOrder(outboundOrderId: string) {
+  return request<void>({
+    method: 'PATCH',
+    url: `/outbound-order/${outboundOrderId}/dispatch`,
+  })
+}

@@ -61,4 +61,10 @@ public class OutboundOrderController {
 		outboundOrderService.cancelOutboundOrder(id);
 		return ApiResponse.success("出库单已取消", null);
 	}
+
+	@PatchMapping("/{id}/dispatch")
+	public ApiResponse<Void> dispatchOutboundOrder(@PathVariable Long id) {
+		outboundOrderService.dispatchOutboundOrder(id);
+		return ApiResponse.success("拣货任务已生成", null);
+	}
 }

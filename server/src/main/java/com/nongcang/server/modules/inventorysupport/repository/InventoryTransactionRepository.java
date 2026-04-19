@@ -18,6 +18,7 @@ public class InventoryTransactionRepository {
 
 	public void insertTransaction(
 			String transactionCode,
+			String transactionType,
 			Long productId,
 			Long warehouseId,
 			Long zoneId,
@@ -43,7 +44,7 @@ public class InventoryTransactionRepository {
 				)
 				VALUES (
 				  :transactionCode,
-				  'INBOUND',
+				  :transactionType,
 				  :productId,
 				  :warehouseId,
 				  :zoneId,
@@ -54,8 +55,9 @@ public class InventoryTransactionRepository {
 				  :occurredAt,
 				  :remarks
 				)
-				""", new MapSqlParameterSource()
+		""", new MapSqlParameterSource()
 				.addValue("transactionCode", transactionCode)
+				.addValue("transactionType", transactionType)
 				.addValue("productId", productId)
 				.addValue("warehouseId", warehouseId)
 				.addValue("zoneId", zoneId)

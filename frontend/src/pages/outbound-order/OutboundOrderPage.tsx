@@ -10,6 +10,7 @@ import type { CustomerOption } from '../../features/customer/types'
 import {
   cancelOutboundOrder,
   createOutboundOrder,
+  dispatchOutboundOrder,
   getOutboundOrderDetail,
   getOutboundOrderList,
   updateOutboundOrder,
@@ -204,6 +205,9 @@ function OutboundOrderPage() {
               <button type="button" onClick={() => handleEdit(row.id)}>
                 编辑
               </button>
+              <button type="button" onClick={() => handleDispatch(row)}>
+                生成任务
+              </button>
               <button type="button" onClick={() => handleCancel(row)}>
                 取消
               </button>
@@ -264,6 +268,21 @@ function OutboundOrderPage() {
 
     try {
       await cancelOutboundOrder(row.id)
+      await loadOutboundOrderList(buildQueryParams(queryForm))
+    } catch (error) {
+      setPageError(normalizeError(error))
+    }
+  }
+
+  const handleDispatch = async (row: OutboundOrderRow) => {
+    const confirmed = window.confirm(`确认基于“${row.orderCode}”生成拣货任务吗？`)
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await dispatchOutboundOrder(row.id)
       await loadOutboundOrderList(buildQueryParams(queryForm))
     } catch (error) {
       setPageError(normalizeError(error))
