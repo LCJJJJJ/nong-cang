@@ -20,6 +20,7 @@ import type {
   QualityInspectionListItem,
   QualityInspectionListQuery,
 } from '../../features/qualityinspection/types'
+import { getInspectionSourceTypeLabel } from '../../utils/quality-loss-labels'
 import { buildQuantityStep } from '../../utils/quantity'
 import './QualityInspectionPage.css'
 
@@ -118,7 +119,7 @@ function QualityInspectionPage() {
     if (formState.sourceType === 'INBOUND_RECORD') {
       return inboundRecords.map((item) => ({
         id: item.id,
-        label: `${item.recordCode} / ${item.productName} / ${item.quantity}`,
+        label: `${getInspectionSourceTypeLabel('INBOUND_RECORD')} / ${item.recordCode} / ${item.productName} / ${item.quantity}`,
         quantity: item.quantity,
         productId: item.productId,
       }))
@@ -126,7 +127,7 @@ function QualityInspectionPage() {
 
     return inventoryStocks.map((item) => ({
       id: item.id,
-      label: `${item.productName} / ${item.locationName} / 可检 ${item.availableQuantity}`,
+      label: `${getInspectionSourceTypeLabel('INVENTORY_STOCK')} / ${item.productName} / ${item.locationName} / 可检 ${item.availableQuantity}`,
       quantity: item.availableQuantity,
       productId: item.productId,
     }))
@@ -148,7 +149,7 @@ function QualityInspectionPage() {
       key: 'source',
       title: '质检来源',
       minWidth: 220,
-      render: (row) => `${row.sourceType} / ${row.sourceCode}`,
+      render: (row) => `${row.sourceLabel || getInspectionSourceTypeLabel(row.sourceType)} / ${row.sourceCode}`,
     },
     {
       key: 'product',
@@ -284,8 +285,8 @@ function QualityInspectionPage() {
               }
             >
               <option value="">全部来源</option>
-              <option value="INBOUND_RECORD">INBOUND_RECORD</option>
-              <option value="INVENTORY_STOCK">INVENTORY_STOCK</option>
+              <option value="INBOUND_RECORD">{getInspectionSourceTypeLabel('INBOUND_RECORD')}</option>
+              <option value="INVENTORY_STOCK">{getInspectionSourceTypeLabel('INVENTORY_STOCK')}</option>
             </select>
           </label>
 
@@ -402,8 +403,8 @@ function QualityInspectionPage() {
                     }))
                   }
                 >
-                  <option value="INVENTORY_STOCK">INVENTORY_STOCK</option>
-                  <option value="INBOUND_RECORD">INBOUND_RECORD</option>
+                  <option value="INVENTORY_STOCK">{getInspectionSourceTypeLabel('INVENTORY_STOCK')}</option>
+                  <option value="INBOUND_RECORD">{getInspectionSourceTypeLabel('INBOUND_RECORD')}</option>
                 </select>
               </label>
 

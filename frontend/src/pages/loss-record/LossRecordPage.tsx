@@ -24,6 +24,10 @@ import { getWarehouseLocationOptions } from '../../features/warehouselocation/ap
 import type { WarehouseLocationOption } from '../../features/warehouselocation/types'
 import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
 import type { WarehouseZoneOption } from '../../features/warehousezone/types'
+import {
+  getLossSourceModeLabel,
+  getLossSourceTypeLabel,
+} from '../../utils/quality-loss-labels'
 import { buildQuantityStep } from '../../utils/quantity'
 import './LossRecordPage.css'
 
@@ -168,7 +172,7 @@ function LossRecordPage() {
       key: 'sourceType',
       title: '来源类型',
       minWidth: 140,
-      render: (row) => row.sourceType,
+      render: (row) => getLossSourceTypeLabel(row.sourceType),
     },
     {
       key: 'product',
@@ -296,8 +300,8 @@ function LossRecordPage() {
               }
             >
               <option value="">全部来源</option>
-              <option value="DIRECT">DIRECT</option>
-              <option value="ABNORMAL_STOCK">ABNORMAL_STOCK</option>
+              <option value="DIRECT">{getLossSourceTypeLabel('DIRECT')}</option>
+              <option value="ABNORMAL_STOCK">{getLossSourceTypeLabel('ABNORMAL_STOCK')}</option>
             </select>
           </label>
 
@@ -410,8 +414,8 @@ function LossRecordPage() {
                     })
                   }
                 >
-                  <option value="DIRECT">DIRECT</option>
-                  <option value="ABNORMAL">ABNORMAL</option>
+                  <option value="DIRECT">{getLossSourceModeLabel('DIRECT')}</option>
+                  <option value="ABNORMAL">{getLossSourceModeLabel('ABNORMAL')}</option>
                 </select>
               </label>
 
