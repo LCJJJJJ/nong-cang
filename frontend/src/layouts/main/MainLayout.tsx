@@ -110,6 +110,8 @@ const navigationSections: NavigationSection[] = [
   {
     label: '预警与消息提醒',
     icon: 'alert',
+    expanded: true,
+    children: [{ label: '预警规则管理', path: '/alert-rules' }],
   },
   {
     label: '统计分析与报表',
@@ -237,6 +239,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '损耗登记管理',
     description:
       '统一查看异常转损耗和人工直接登记的损耗记录，损耗入账后会同步减少库存。',
+  },
+  '/alert-rules': {
+    title: '预警规则管理',
+    description:
+      '维护系统内置预警阈值和严重级别，并可手动刷新预警实例。',
   },
 }
 
