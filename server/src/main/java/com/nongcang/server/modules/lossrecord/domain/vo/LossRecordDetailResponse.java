@@ -1,9 +1,6 @@
-package com.nongcang.server.modules.lossrecord.domain.entity;
+package com.nongcang.server.modules.lossrecord.domain.vo;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-public record LossRecordEntity(
+public record LossRecordDetailResponse(
 		Long id,
 		String lossCode,
 		String sourceType,
@@ -19,8 +16,8 @@ public record LossRecordEntity(
 		String zoneName,
 		Long locationId,
 		String locationName,
-		BigDecimal quantity,
+		Double quantity,
 		String lossReason,
 		String remarks,
-		LocalDateTime createdAt) {
+		String createdAt) {
 }

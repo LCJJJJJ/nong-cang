@@ -15,6 +15,7 @@ import InventoryStockPage from '../pages/inventory-stock/InventoryStockPage'
 import InventoryStocktakingPage from '../pages/inventory-stocktaking/InventoryStocktakingPage'
 import InventoryTransactionPage from '../pages/inventory-transaction/InventoryTransactionPage'
 import InventoryAdjustmentPage from '../pages/inventory-adjustment/InventoryAdjustmentPage'
+import LossRecordPage from '../pages/loss-record/LossRecordPage'
 import OutboundOrderPage from '../pages/outbound-order/OutboundOrderPage'
 import OutboundRecordPage from '../pages/outbound-record/OutboundRecordPage'
 import OutboundTaskPage from '../pages/outbound-task/OutboundTaskPage'
@@ -70,6 +71,7 @@ function App() {
               />
               <Route path="/quality-inspections" element={<QualityInspectionPage />} />
               <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
+              <Route path="/loss-records" element={<LossRecordPage />} />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />
               <Route path="/warehouses" element={<WarehousePage />} />

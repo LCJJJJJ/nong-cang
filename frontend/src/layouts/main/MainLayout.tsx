@@ -104,6 +104,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '质检单管理', path: '/quality-inspections' },
       { label: '异常库存管理', path: '/abnormal-stocks' },
+      { label: '损耗登记管理', path: '/loss-records' },
     ],
   },
   {
@@ -231,6 +232,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '异常库存管理',
     description:
       '查看由质检单锁定的不合格库存，并为后续释放回库或转损耗处理提供来源数据。',
+  },
+  '/loss-records': {
+    title: '损耗登记管理',
+    description:
+      '统一查看异常转损耗和人工直接登记的损耗记录，损耗入账后会同步减少库存。',
   },
 }
 
