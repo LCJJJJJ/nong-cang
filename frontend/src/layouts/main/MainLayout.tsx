@@ -79,6 +79,8 @@ const navigationSections: NavigationSection[] = [
   {
     label: '出库管理',
     icon: 'outbound',
+    expanded: true,
+    children: [{ label: '出库单管理', path: '/outbound-orders' }],
   },
   {
     label: '库存管理',
@@ -168,6 +170,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '入库记录查询',
     description:
       '查询已完成上架的入库结果，统一追踪供应商、仓库、库位、产品和实际入库时间。',
+  },
+  '/outbound-orders': {
+    title: '出库单管理',
+    description:
+      '维护待出库业务单据，统一关联客户、仓库和产品明细，为后续拣货出库任务提供业务入口。',
   },
 }
 
