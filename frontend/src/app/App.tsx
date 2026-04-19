@@ -13,6 +13,7 @@ import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 import WarehousePage from '../pages/warehouse/WarehousePage'
+import WarehouseLocationPage from '../pages/warehouse-location/WarehouseLocationPage'
 import WarehouseZonePage from '../pages/warehouse-zone/WarehouseZonePage'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/quality-grades" element={<QualityGradePage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
             <Route path="/warehouses" element={<WarehousePage />} />
+            <Route path="/warehouse-locations" element={<WarehouseLocationPage />} />
             <Route path="/warehouse-zones" element={<WarehouseZonePage />} />
           </Route>
           </Route>

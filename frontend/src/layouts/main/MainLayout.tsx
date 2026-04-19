@@ -54,7 +54,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '仓库信息管理', path: '/warehouses' },
       { label: '库区管理', path: '/warehouse-zones' },
-      { label: '库位管理' },
+      { label: '库位管理', path: '/warehouse-locations' },
     ],
   },
   {
@@ -127,6 +127,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '库区管理',
     description:
       '维护仓库内部的功能分区，为库位管理、入库上架和库存作业提供统一库区维度。',
+  },
+  '/warehouse-locations': {
+    title: '库位管理',
+    description:
+      '维护仓库内部实际可存放货物的库位信息，为上架、拣选和库存定位提供细粒度空间维度。',
   },
 }
 
