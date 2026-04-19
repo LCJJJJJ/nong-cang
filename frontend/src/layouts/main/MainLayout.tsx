@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
+import AssistantWidget from '../../features/assistant/AssistantWidget'
 import { useAuthSession } from '../../features/auth/useAuthSession'
 import './MainLayout.css'
 
@@ -457,6 +458,8 @@ function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AssistantWidget routePath={location.pathname} routeTitle={pageMeta.title} />
     </div>
   )
 }
