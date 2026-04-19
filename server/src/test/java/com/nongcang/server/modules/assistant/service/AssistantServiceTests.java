@@ -92,7 +92,15 @@ class AssistantServiceTests {
 
 	private Authentication authentication() {
 		return new UsernamePasswordAuthenticationToken(
-				new AuthenticatedUser(1L, "admin", "系统管理员", "13800000000", List.of("ADMIN")),
+				new AuthenticatedUser(
+						1L,
+						"admin",
+						"系统管理员",
+						"13800000000",
+						"ADMIN",
+						null,
+						null,
+						List.of("ADMIN")),
 				null,
 				List.of());
 	}
