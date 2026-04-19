@@ -8,11 +8,13 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.modules.abnormalstock.domain.dto.AbnormalStockLossRequest;
 import com.nongcang.server.modules.abnormalstock.domain.dto.AbnormalStockListQueryRequest;
 import com.nongcang.server.modules.abnormalstock.domain.entity.AbnormalStockEntity;
 import com.nongcang.server.modules.abnormalstock.domain.vo.AbnormalStockDetailResponse;
 import com.nongcang.server.modules.abnormalstock.domain.vo.AbnormalStockListItemResponse;
 import com.nongcang.server.modules.abnormalstock.domain.vo.AbnormalStockOptionResponse;
+import com.nongcang.server.modules.lossrecord.service.LossRecordService;
 import com.nongcang.server.modules.abnormalstock.repository.AbnormalStockRepository;
 import com.nongcang.server.modules.qualityinspection.domain.vo.QualityInspectionDetailResponse;
 import org.springframework.stereotype.Service;
@@ -29,9 +31,13 @@ public class AbnormalStockService {
 			DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
 	private final AbnormalStockRepository abnormalStockRepository;
+	private final LossRecordService lossRecordService;
 
-	public AbnormalStockService(AbnormalStockRepository abnormalStockRepository) {
+	public AbnormalStockService(
+			AbnormalStockRepository abnormalStockRepository,
+			LossRecordService lossRecordService) {
 		this.abnormalStockRepository = abnormalStockRepository;
+		this.lossRecordService = lossRecordService;
 	}
 
 	public List<AbnormalStockListItemResponse> getAbnormalStockList(AbnormalStockListQueryRequest queryRequest) {
@@ -72,6 +78,32 @@ public class AbnormalStockService {
 				STATUS_LOCKED,
 				inspectionDetail.resultStatusLabel(),
 				inspectionDetail.remarks());
+	}
+
+	@Transactional
+	public void release(Long id) {
+		AbnormalStockEntity abnormalStock = getExistingAbnormalStock(id);
+
+		if (!Objects.equals(abnormalStock.status(), STATUS_LOCKED)) {
+			throw new BusinessException(CommonErrorCode.ABNORMAL_STOCK_STATUS_INVALID);
+		}
+
+		abnormalStockRepository.updateStatus(id, STATUS_RELEASED, LocalDateTime.now());
+	}
+
+	@Transactional
+	public void disposeToLoss(Long id, AbnormalStockLossRequest request) {
+		AbnormalStockEntity abnormalStock = getExistingAbnormalStock(id);
+
+		if (!Objects.equals(abnormalStock.status(), STATUS_LOCKED)) {
+			throw new BusinessException(CommonErrorCode.ABNORMAL_STOCK_STATUS_INVALID);
+		}
+
+		lossRecordService.createFromAbnormalStock(
+				abnormalStock,
+				request.lossReason().trim(),
+				StringUtils.hasText(request.remarks()) ? request.remarks().trim() : null);
+		abnormalStockRepository.updateStatus(id, STATUS_DISPOSED, LocalDateTime.now());
 	}
 
 	public AbnormalStockEntity getExistingAbnormalStock(Long id) {

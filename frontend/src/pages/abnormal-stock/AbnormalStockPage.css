@@ -107,6 +107,29 @@
   color: #3d4a3f;
 }
 
+.abnormal-stock-page__row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.abnormal-stock-page__row-actions button {
+  border: 0;
+  background: transparent;
+  color: #3d4a3f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.abnormal-stock-page__row-actions button:hover {
+  color: #006d37;
+}
+
 .abnormal-stock-page__name-cell {
   display: flex;
   flex-direction: column;
@@ -148,4 +171,100 @@
 
 .abnormal-stock-page__status.is-disposed::before {
   background: #989898;
+}
+
+.abnormal-stock-page__dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(22, 32, 24, 0.22);
+}
+
+.abnormal-stock-page__dialog {
+  width: min(100%, 720px);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  background: #ffffff;
+  box-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.08),
+    0 0 30px rgba(0, 0, 0, 0.04);
+}
+
+.abnormal-stock-page__dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 0;
+}
+
+.abnormal-stock-page__dialog-header h3 {
+  margin: 0;
+  font-size: 24px;
+  color: #191c1d;
+}
+
+.abnormal-stock-page__dialog-header p {
+  margin-top: 8px;
+  color: #3d4a3f;
+  font-size: 14px;
+}
+
+.abnormal-stock-page__dialog-close {
+  border: 0;
+  background: transparent;
+  color: #3d4a3f;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.abnormal-stock-page__dialog-form {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.abnormal-stock-page__field--full {
+  grid-column: 1 / -1;
+}
+
+.abnormal-stock-page__field textarea {
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 0;
+  background: #f2f4f5;
+  color: #191c1d;
+  resize: vertical;
+}
+
+.abnormal-stock-page__dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.abnormal-stock-page__dialog-actions button {
+  min-width: 120px;
+  height: 44px;
+  border: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.abnormal-stock-page__dialog-actions .is-ghost {
+  background: #e6e8e9;
+  color: #191c1d;
+}
+
+.abnormal-stock-page__dialog-actions .is-dark {
+  background: #191c1d;
+  color: #f8fafb;
 }

@@ -28,3 +28,21 @@ export function getAbnormalStockOptions() {
     url: '/abnormal-stock/options',
   })
 }
+
+export function releaseAbnormalStock(abnormalStockId: string) {
+  return request<void>({
+    method: 'PATCH',
+    url: `/abnormal-stock/${abnormalStockId}/release`,
+  })
+}
+
+export function disposeAbnormalStockToLoss(
+  abnormalStockId: string,
+  payload: { lossReason: string; remarks: string | null },
+) {
+  return request<void>({
+    method: 'POST',
+    url: `/abnormal-stock/${abnormalStockId}/dispose-loss`,
+    data: payload,
+  })
+}

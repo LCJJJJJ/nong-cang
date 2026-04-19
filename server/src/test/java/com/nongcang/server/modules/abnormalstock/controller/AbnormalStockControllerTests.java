@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,6 +65,74 @@ class AbnormalStockControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data", Matchers.hasSize(1)))
 				.andExpect(jsonPath("$.data[0].lockedQuantity").value(2.0));
+	}
+
+	@Test
+	void shouldReleaseAbnormalStock() throws Exception {
+		String abnormalStockId = createAbnormalStock();
+
+		mockMvc.perform(patch("/api/abnormal-stock/" + abnormalStockId + "/release")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("异常库存已释放"));
+	}
+
+	@Test
+	void shouldDisposeAbnormalStockToLoss() throws Exception {
+		String abnormalStockId = createAbnormalStock();
+
+		mockMvc.perform(post("/api/abnormal-stock/" + abnormalStockId + "/dispose-loss")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "lossReason": "腐坏报废",
+							  "remarks": "转损耗测试"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.message").value("异常库存已转损耗"));
+	}
+
+	private String createAbnormalStock() throws Exception {
+		MvcResult stockResult = mockMvc.perform(get("/api/inventory-stock/list")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.param("productId", "1")
+					.param("warehouseId", "1")
+					.param("zoneId", "1"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String stockId = objectMapper.readTree(stockResult.getResponse().getContentAsString())
+				.path("data")
+				.path(0)
+				.path("id")
+				.asText();
+
+		mockMvc.perform(post("/api/quality-inspection")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "sourceType": "INVENTORY_STOCK",
+							  "sourceId": %s,
+							  "inspectQuantity": 8,
+							  "unqualifiedQuantity": 2,
+							  "remarks": "异常库存测试"
+							}
+							""".formatted(stockId)))
+				.andExpect(status().isOk());
+
+		MvcResult optionsResult = mockMvc.perform(get("/api/abnormal-stock/options")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		return objectMapper.readTree(optionsResult.getResponse().getContentAsString())
+				.path("data")
+				.path(0)
+				.path("id")
+				.asText();
 	}
 
 	private String bearerToken() throws Exception {
