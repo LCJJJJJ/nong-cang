@@ -62,6 +62,7 @@ public class InventoryStockQueryService {
 				entity.locationName(),
 				InventoryStockQueryRepository.toDouble(entity.stockQuantity()),
 				InventoryStockQueryRepository.toDouble(entity.reservedQuantity()),
+				InventoryStockQueryRepository.toDouble(entity.lockedQuantity()),
 				InventoryStockQueryRepository.toDouble(entity.availableQuantity()),
 				toIsoDateTime(entity.updatedAt()));
 	}

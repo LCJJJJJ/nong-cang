@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import com.nongcang.server.modules.inboundrecord.domain.entity.InboundRecordEntity;
 import org.springframework.jdbc.core.RowMapper;
@@ -84,6 +85,13 @@ public class InboundRecordRepository {
 		return namedParameterJdbcTemplate.query(INBOUND_RECORD_SELECT + """
 				ORDER BY ir.occurred_at DESC, ir.id DESC
 				""", INBOUND_RECORD_ROW_MAPPER);
+	}
+
+	public Optional<InboundRecordEntity> findById(Long id) {
+		List<InboundRecordEntity> records = namedParameterJdbcTemplate.query(INBOUND_RECORD_SELECT + """
+				WHERE ir.id = :id
+				""", new MapSqlParameterSource("id", id), INBOUND_RECORD_ROW_MAPPER);
+		return records.stream().findFirst();
 	}
 
 	public boolean existsByRecordCode(String recordCode) {

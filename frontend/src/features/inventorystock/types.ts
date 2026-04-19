@@ -15,6 +15,7 @@ export interface InventoryStockListItem {
   locationName: string
   stockQuantity: number
   reservedQuantity: number
+  lockedQuantity: number
   availableQuantity: number
   updatedAt: string
 }

@@ -17,6 +17,7 @@ public record InventoryStockListItemResponse(
 		String locationName,
 		Double stockQuantity,
 		Double reservedQuantity,
+		Double lockedQuantity,
 		Double availableQuantity,
 		String updatedAt) {
 }

@@ -5,6 +5,7 @@ import GuestOnlyRoute from '../features/auth/GuestOnlyRoute'
 import RequireAuth from '../features/auth/RequireAuth'
 import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
+import AbnormalStockPage from '../pages/abnormal-stock/AbnormalStockPage'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
 import CustomerPage from '../pages/customer/CustomerPage'
@@ -21,6 +22,7 @@ import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import PutawayTaskPage from '../pages/putaway-task/PutawayTaskPage'
+import QualityInspectionPage from '../pages/quality-inspection/QualityInspectionPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 import SupplierPage from '../pages/supplier/SupplierPage'
@@ -66,6 +68,8 @@ function App() {
                 path="/inventory-stocktakings"
                 element={<InventoryStocktakingPage />}
               />
+              <Route path="/quality-inspections" element={<QualityInspectionPage />} />
+              <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />
               <Route path="/warehouses" element={<WarehousePage />} />

@@ -100,6 +100,11 @@ const navigationSections: NavigationSection[] = [
   {
     label: '质量检测与损耗管理',
     icon: 'shield',
+    expanded: true,
+    children: [
+      { label: '质检单管理', path: '/quality-inspections' },
+      { label: '异常库存管理', path: '/abnormal-stocks' },
+    ],
   },
   {
     label: '预警与消息提醒',
@@ -216,6 +221,16 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '库存盘点管理',
     description:
       '创建盘点范围、录入实盘数量并确认差异回写库存，是库存治理闭环的最终环节。',
+  },
+  '/quality-inspections': {
+    title: '质检单管理',
+    description:
+      '登记入库质检和在库抽检结果，不合格数量会自动进入异常锁定库存。',
+  },
+  '/abnormal-stocks': {
+    title: '异常库存管理',
+    description:
+      '查看由质检单锁定的不合格库存，并为后续释放回库或转损耗处理提供来源数据。',
   },
 }
 

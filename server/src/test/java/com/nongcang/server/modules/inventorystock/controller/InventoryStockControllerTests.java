@@ -103,6 +103,46 @@ class InventoryStockControllerTests {
 				.andExpect(jsonPath("$.data[0].availableQuantity").value(Matchers.greaterThan(0.0)));
 	}
 
+	@Test
+	void shouldShowLockedQuantityAfterQualityInspection() throws Exception {
+		MvcResult stockResult = mockMvc.perform(get("/api/inventory-stock/list")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.param("productId", "1")
+					.param("warehouseId", "1")
+					.param("zoneId", "1"))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String stockId = objectMapper.readTree(stockResult.getResponse().getContentAsString())
+				.path("data")
+				.path(0)
+				.path("id")
+				.asText();
+
+		mockMvc.perform(post("/api/quality-inspection")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "sourceType": "INVENTORY_STOCK",
+							  "sourceId": %s,
+							  "inspectQuantity": 8,
+							  "unqualifiedQuantity": 3,
+							  "remarks": "锁定异常库存"
+							}
+							""".formatted(stockId)))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/inventory-stock/list")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.param("productId", "1")
+					.param("warehouseId", "1")
+					.param("zoneId", "1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data[0].lockedQuantity").value(3.0))
+				.andExpect(jsonPath("$.data[0].availableQuantity").value(Matchers.greaterThan(0.0)));
+	}
+
 	private String findTaskIdByOrderId(JsonNode taskList, String outboundOrderId) {
 		for (JsonNode task : taskList) {
 			if (outboundOrderId.equals(task.path("outboundOrderId").asText())) {

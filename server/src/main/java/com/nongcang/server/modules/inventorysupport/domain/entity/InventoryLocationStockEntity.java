@@ -10,5 +10,6 @@ public record InventoryLocationStockEntity(
 		String locationName,
 		BigDecimal stockQuantity,
 		BigDecimal reservedQuantity,
+		BigDecimal lockedQuantity,
 		BigDecimal availableQuantity) {
 }

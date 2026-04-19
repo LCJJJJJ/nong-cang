@@ -25,6 +25,7 @@ public class InventoryStockRepository {
 					rs.getString("location_name"),
 					rs.getBigDecimal("stock_quantity"),
 					rs.getBigDecimal("reserved_quantity"),
+					rs.getBigDecimal("locked_quantity"),
 					rs.getBigDecimal("available_quantity"));
 		}
 	};
@@ -133,6 +134,19 @@ public class InventoryStockRepository {
 		return quantity == null ? BigDecimal.ZERO : quantity;
 	}
 
+	public BigDecimal getLockedQuantity(Long productId, Long locationId) {
+		BigDecimal quantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(locked_quantity), 0)
+				FROM abnormal_stock
+				WHERE product_id = :productId
+				  AND location_id = :locationId
+				  AND status = 1
+				""", new MapSqlParameterSource()
+				.addValue("productId", productId)
+				.addValue("locationId", locationId), BigDecimal.class);
+		return quantity == null ? BigDecimal.ZERO : quantity;
+	}
+
 	public List<InventoryLocationStockEntity> findAvailableStocks(
 			Long productId,
 			Long warehouseId,
@@ -145,37 +159,41 @@ public class InventoryStockRepository {
 				  s.location_id,
 				  wl.location_name,
 				  s.quantity AS stock_quantity,
-				  COALESCE(SUM(
-				    CASE
-				      WHEN ot.status IN (2, 3) AND ot.id <> :excludeTaskId THEN ot.quantity
-				      ELSE 0
-				    END
-				  ), 0) AS reserved_quantity,
+				  COALESCE(reserved.reserved_quantity, 0) AS reserved_quantity,
+				  COALESCE(abnormal.locked_quantity, 0) AS locked_quantity,
 				  GREATEST(
-				    s.quantity - COALESCE(SUM(
-				      CASE
-				        WHEN ot.status IN (2, 3) AND ot.id <> :excludeTaskId THEN ot.quantity
-				        ELSE 0
-				      END
-				    ), 0),
+				    s.quantity - COALESCE(reserved.reserved_quantity, 0) - COALESCE(abnormal.locked_quantity, 0),
 				    0
 				  ) AS available_quantity
 				FROM inventory_stock s
 				JOIN warehouse_zone wz ON wz.id = s.zone_id
 				JOIN warehouse_location wl ON wl.id = s.location_id
-				LEFT JOIN outbound_task ot
-				  ON ot.product_id = s.product_id
-				 AND ot.location_id = s.location_id
+				LEFT JOIN (
+				  SELECT
+				    product_id,
+				    location_id,
+				    SUM(quantity) AS reserved_quantity
+				  FROM outbound_task
+				  WHERE status IN (2, 3)
+				    AND id <> :excludeTaskId
+				  GROUP BY product_id, location_id
+				) reserved
+				  ON reserved.product_id = s.product_id
+				 AND reserved.location_id = s.location_id
+				LEFT JOIN (
+				  SELECT
+				    product_id,
+				    location_id,
+				    SUM(locked_quantity) AS locked_quantity
+				  FROM abnormal_stock
+				  WHERE status = 1
+				  GROUP BY product_id, location_id
+				) abnormal
+				  ON abnormal.product_id = s.product_id
+				 AND abnormal.location_id = s.location_id
 				WHERE s.product_id = :productId
 				  AND s.warehouse_id = :warehouseId
 				  AND s.quantity > 0
-				GROUP BY
-				  s.warehouse_id,
-				  s.zone_id,
-				  wz.zone_name,
-				  s.location_id,
-				  wl.location_name,
-				  s.quantity
 				ORDER BY wz.zone_name ASC, wl.location_name ASC
 				""", new MapSqlParameterSource()
 				.addValue("productId", productId)

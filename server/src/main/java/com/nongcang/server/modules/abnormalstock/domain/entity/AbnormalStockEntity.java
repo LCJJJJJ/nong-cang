@@ -1,27 +1,29 @@
-package com.nongcang.server.modules.inventorystock.domain.entity;
+package com.nongcang.server.modules.abnormalstock.domain.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record InventoryStockEntity(
+public record AbnormalStockEntity(
 		Long id,
+		String abnormalCode,
+		Long qualityInspectionId,
+		String inspectionCode,
 		Long productId,
 		String productCode,
 		String productName,
-		String productSpecification,
-		Long unitId,
 		String unitName,
 		String unitSymbol,
-		Integer precisionDigits,
 		Long warehouseId,
 		String warehouseName,
 		Long zoneId,
 		String zoneName,
 		Long locationId,
 		String locationName,
-		BigDecimal stockQuantity,
-		BigDecimal reservedQuantity,
 		BigDecimal lockedQuantity,
-		BigDecimal availableQuantity,
+		Integer status,
+		String reason,
+		String remarks,
+		LocalDateTime processedAt,
+		LocalDateTime createdAt,
 		LocalDateTime updatedAt) {
 }

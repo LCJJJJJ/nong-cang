@@ -1,36 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { normalizeError, type AppError } from '../../api/errors'
 import TreeDataTable, {
   type TreeTableColumn,
   type TreeTableRow,
 } from '../../components/tree-data-table/TreeDataTable'
-import { getInventoryStockList } from '../../features/inventorystock/api'
+import { getAbnormalStockList } from '../../features/abnormalstock/api'
 import type {
-  InventoryStockListItem,
-  InventoryStockListQuery,
-} from '../../features/inventorystock/types'
+  AbnormalStockListItem,
+  AbnormalStockListQuery,
+} from '../../features/abnormalstock/types'
 import { getProductArchiveOptions } from '../../features/productarchive/api'
 import type { ProductArchiveOption } from '../../features/productarchive/types'
 import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
-import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
-import type { WarehouseZoneOption } from '../../features/warehousezone/types'
-import './InventoryStockPage.css'
+import './AbnormalStockPage.css'
 
-type InventoryStockRow = TreeTableRow & InventoryStockListItem
+type AbnormalStockRow = TreeTableRow & AbnormalStockListItem
 
-function InventoryStockPage() {
+function AbnormalStockPage() {
   const [queryForm, setQueryForm] = useState({
+    abnormalCode: '',
     productId: '',
     warehouseId: '',
-    zoneId: '',
+    status: '',
   })
-  const [inventoryStocks, setInventoryStocks] = useState<InventoryStockRow[]>([])
+  const [abnormalStocks, setAbnormalStocks] = useState<AbnormalStockRow[]>([])
   const [warehouseOptions, setWarehouseOptions] = useState<WarehouseOption[]>([])
-  const [warehouseZoneOptions, setWarehouseZoneOptions] = useState<
-    WarehouseZoneOption[]
-  >([])
   const [productOptions, setProductOptions] = useState<ProductArchiveOption[]>([])
   const [pageError, setPageError] = useState<AppError | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -40,10 +36,9 @@ function InventoryStockPage() {
 
     const bootstrap = async () => {
       try {
-        const [list, warehouses, zones, products] = await Promise.all([
-          getInventoryStockList(),
+        const [list, warehouses, products] = await Promise.all([
+          getAbnormalStockList(),
           getWarehouseOptions(),
-          getWarehouseZoneOptions(),
           getProductArchiveOptions(),
         ])
 
@@ -51,9 +46,8 @@ function InventoryStockPage() {
           return
         }
 
-        setInventoryStocks(toTableRows(list))
+        setAbnormalStocks(toTableRows(list))
         setWarehouseOptions(warehouses)
-        setWarehouseZoneOptions(zones)
         setProductOptions(products)
       } catch (error) {
         if (!isMounted) {
@@ -75,13 +69,13 @@ function InventoryStockPage() {
     }
   }, [])
 
-  async function loadInventoryStockList(query: InventoryStockListQuery) {
+  async function loadAbnormalStockList(query: AbnormalStockListQuery) {
     setIsLoading(true)
     setPageError(null)
 
     try {
-      const list = await getInventoryStockList(query)
-      setInventoryStocks(toTableRows(list))
+      const list = await getAbnormalStockList(query)
+      setAbnormalStocks(toTableRows(list))
     } catch (error) {
       setPageError(normalizeError(error))
     } finally {
@@ -89,23 +83,27 @@ function InventoryStockPage() {
     }
   }
 
-  const filteredZoneOptions = useMemo(
-    () =>
-      queryForm.warehouseId
-        ? warehouseZoneOptions.filter((option) => option.warehouseId === queryForm.warehouseId)
-        : warehouseZoneOptions,
-    [warehouseZoneOptions, queryForm.warehouseId],
-  )
-
-  const columns: TreeTableColumn<InventoryStockRow>[] = [
+  const columns: TreeTableColumn<AbnormalStockRow>[] = [
+    {
+      key: 'abnormalCode',
+      title: '异常库存编号',
+      minWidth: 180,
+      render: (row) => row.abnormalCode,
+    },
+    {
+      key: 'inspectionCode',
+      title: '来源质检单',
+      minWidth: 180,
+      render: (row) => row.inspectionCode,
+    },
     {
       key: 'product',
       title: '产品',
-      minWidth: 240,
+      minWidth: 220,
       render: (row) => (
-        <div className="inventory-stock-page__name-cell">
+        <div className="abnormal-stock-page__name-cell">
           <strong>{row.productName}</strong>
-          <span>{`${row.productCode} / ${row.unitName}${row.unitSymbol ? ` (${row.unitSymbol})` : ''}`}</span>
+          <span>{row.productCode}</span>
         </div>
       ),
     },
@@ -116,80 +114,87 @@ function InventoryStockPage() {
       render: (row) => row.warehouseName,
     },
     {
-      key: 'zone',
-      title: '库区',
-      minWidth: 150,
-      render: (row) => row.zoneName,
-    },
-    {
       key: 'location',
       title: '库位',
-      minWidth: 160,
-      render: (row) => row.locationName,
-    },
-    {
-      key: 'stockQuantity',
-      title: '现存数量',
-      minWidth: 120,
-      render: (row) => row.stockQuantity,
-    },
-    {
-      key: 'reservedQuantity',
-      title: '预留数量',
-      minWidth: 120,
-      render: (row) => row.reservedQuantity,
+      minWidth: 170,
+      render: (row) => `${row.zoneName} / ${row.locationName}`,
     },
     {
       key: 'lockedQuantity',
-      title: '异常锁定',
+      title: '锁定数量',
       minWidth: 120,
       render: (row) => row.lockedQuantity,
     },
     {
-      key: 'availableQuantity',
-      title: '可用数量',
+      key: 'status',
+      title: '状态',
       minWidth: 120,
       render: (row) => (
-        <strong className="inventory-stock-page__available">
-          {row.availableQuantity}
-        </strong>
+        <span
+          className={`abnormal-stock-page__status${
+            row.status === 1 ? ' is-locked' : row.status === 2 ? ' is-released' : ' is-disposed'
+          }`}
+        >
+          {row.statusLabel}
+        </span>
       ),
     },
     {
-      key: 'updatedAt',
-      title: '更新时间',
+      key: 'reason',
+      title: '异常原因',
+      minWidth: 160,
+      render: (row) => row.reason,
+    },
+    {
+      key: 'createdAt',
+      title: '创建时间',
       minWidth: 170,
-      render: (row) => formatDateTime(row.updatedAt),
+      render: (row) => formatDateTime(row.createdAt),
     },
   ]
 
   const handleSearch = async () => {
-    await loadInventoryStockList(buildQueryParams(queryForm))
+    await loadAbnormalStockList(buildQueryParams(queryForm))
   }
 
   const handleReset = async () => {
     const resetState = {
+      abnormalCode: '',
       productId: '',
       warehouseId: '',
-      zoneId: '',
+      status: '',
     }
 
     setQueryForm(resetState)
-    await loadInventoryStockList({})
+    await loadAbnormalStockList({})
   }
 
   return (
-    <section className="inventory-stock-page">
+    <section className="abnormal-stock-page">
       {pageError ? (
-        <div className="inventory-stock-page__message inventory-stock-page__message--error">
+        <div className="abnormal-stock-page__message abnormal-stock-page__message--error">
           <strong>{pageError.message}</strong>
           {pageError.traceId ? <span>追踪编号：{pageError.traceId}</span> : null}
         </div>
       ) : null}
 
-      <div className="inventory-stock-page__search">
-        <div className="inventory-stock-page__search-grid">
-          <label className="inventory-stock-page__field">
+      <div className="abnormal-stock-page__search">
+        <div className="abnormal-stock-page__search-grid">
+          <label className="abnormal-stock-page__field">
+            <span>异常库存编号</span>
+            <input
+              type="text"
+              value={queryForm.abnormalCode}
+              onChange={(event) =>
+                setQueryForm((current) => ({
+                  ...current,
+                  abnormalCode: event.target.value,
+                }))
+              }
+            />
+          </label>
+
+          <label className="abnormal-stock-page__field">
             <span>产品档案</span>
             <select
               value={queryForm.productId}
@@ -209,15 +214,14 @@ function InventoryStockPage() {
             </select>
           </label>
 
-          <label className="inventory-stock-page__field">
-            <span>所属仓库</span>
+          <label className="abnormal-stock-page__field">
+            <span>仓库</span>
             <select
               value={queryForm.warehouseId}
               onChange={(event) =>
                 setQueryForm((current) => ({
                   ...current,
                   warehouseId: event.target.value,
-                  zoneId: '',
                 }))
               }
             >
@@ -230,27 +234,25 @@ function InventoryStockPage() {
             </select>
           </label>
 
-          <label className="inventory-stock-page__field">
-            <span>所属库区</span>
+          <label className="abnormal-stock-page__field">
+            <span>状态</span>
             <select
-              value={queryForm.zoneId}
+              value={queryForm.status}
               onChange={(event) =>
                 setQueryForm((current) => ({
                   ...current,
-                  zoneId: event.target.value,
+                  status: event.target.value,
                 }))
               }
             >
-              <option value="">全部库区</option>
-              {filteredZoneOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
+              <option value="">全部状态</option>
+              <option value="1">锁定中</option>
+              <option value="2">已释放</option>
+              <option value="3">已转损耗</option>
             </select>
           </label>
 
-          <div className="inventory-stock-page__actions">
+          <div className="abnormal-stock-page__actions">
             <button type="button" className="is-ghost" onClick={() => void handleReset()}>
               重置
             </button>
@@ -261,21 +263,21 @@ function InventoryStockPage() {
         </div>
       </div>
 
-      <div className="inventory-stock-page__toolbar">
-        <div className="inventory-stock-page__toolbar-copy">
-          <h3>实时库存列表</h3>
-          <p>展示当前库存、任务预留和可用数量，为出库分配、盘点和预警提供统一库存视图。</p>
+      <div className="abnormal-stock-page__toolbar">
+        <div className="abnormal-stock-page__toolbar-copy">
+          <h3>异常库存列表</h3>
+          <p>展示由质检单锁定的不合格库存，后续会在这里执行释放或转损耗处理。</p>
         </div>
       </div>
 
-      <div className="inventory-stock-page__table-shell">
+      <div className="abnormal-stock-page__table-shell">
         {isLoading ? (
-          <div className="inventory-stock-page__loading">正在加载实时库存...</div>
+          <div className="abnormal-stock-page__loading">正在加载异常库存...</div>
         ) : (
           <TreeDataTable
-            data={inventoryStocks}
+            data={abnormalStocks}
             columns={columns}
-            emptyText="暂无库存数据"
+            emptyText="暂无异常库存"
           />
         )}
       </div>
@@ -283,21 +285,23 @@ function InventoryStockPage() {
   )
 }
 
-function toTableRows(rows: InventoryStockListItem[]): InventoryStockRow[] {
+function toTableRows(rows: AbnormalStockListItem[]): AbnormalStockRow[] {
   return rows.map((row) => ({
     ...row,
   }))
 }
 
 function buildQueryParams(queryForm: {
+  abnormalCode: string
   productId: string
   warehouseId: string
-  zoneId: string
-}): InventoryStockListQuery {
+  status: string
+}): AbnormalStockListQuery {
   return {
+    abnormalCode: queryForm.abnormalCode.trim() || undefined,
     productId: queryForm.productId || undefined,
     warehouseId: queryForm.warehouseId || undefined,
-    zoneId: queryForm.zoneId || undefined,
+    status: queryForm.status ? Number(queryForm.status) : undefined,
   }
 }
 
@@ -311,4 +315,4 @@ function formatDateTime(value: string) {
   }).format(new Date(value))
 }
 
-export default InventoryStockPage
+export default AbnormalStockPage
