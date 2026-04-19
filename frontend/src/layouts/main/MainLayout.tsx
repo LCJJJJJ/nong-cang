@@ -93,6 +93,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '实时库存查询', path: '/inventory-stocks' },
       { label: '库存流水', path: '/inventory-transactions' },
+      { label: '库存调整管理', path: '/inventory-adjustments' },
     ],
   },
   {
@@ -204,6 +205,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '库存流水',
     description:
       '统一查询库存增减记录，覆盖入库、出库、调整和盘点等库存变化来源。',
+  },
+  '/inventory-adjustments': {
+    title: '库存调整管理',
+    description:
+      '处理系统初始化修正、人工纠错等非业务单据导致的库存变更，并沉淀标准调整记录和流水。',
   },
 }
 
