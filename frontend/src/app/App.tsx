@@ -11,6 +11,7 @@ import CustomerPage from '../pages/customer/CustomerPage'
 import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import InboundRecordPage from '../pages/inbound-record/InboundRecordPage'
 import InventoryStockPage from '../pages/inventory-stock/InventoryStockPage'
+import InventoryStocktakingPage from '../pages/inventory-stocktaking/InventoryStocktakingPage'
 import InventoryTransactionPage from '../pages/inventory-transaction/InventoryTransactionPage'
 import InventoryAdjustmentPage from '../pages/inventory-adjustment/InventoryAdjustmentPage'
 import OutboundOrderPage from '../pages/outbound-order/OutboundOrderPage'
@@ -60,6 +61,10 @@ function App() {
               <Route
                 path="/inventory-adjustments"
                 element={<InventoryAdjustmentPage />}
+              />
+              <Route
+                path="/inventory-stocktakings"
+                element={<InventoryStocktakingPage />}
               />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />

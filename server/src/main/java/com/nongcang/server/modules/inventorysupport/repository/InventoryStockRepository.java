@@ -89,6 +89,50 @@ public class InventoryStockRepository {
 		return updatedRows > 0;
 	}
 
+	public void setStockQuantity(
+			Long productId,
+			Long warehouseId,
+			Long zoneId,
+			Long locationId,
+			BigDecimal quantity) {
+		namedParameterJdbcTemplate.update("""
+				INSERT INTO inventory_stock (
+				  product_id,
+				  warehouse_id,
+				  zone_id,
+				  location_id,
+				  quantity
+				)
+				VALUES (
+				  :productId,
+				  :warehouseId,
+				  :zoneId,
+				  :locationId,
+				  :quantity
+				)
+				ON DUPLICATE KEY UPDATE
+				  quantity = VALUES(quantity)
+				""", new MapSqlParameterSource()
+				.addValue("productId", productId)
+				.addValue("warehouseId", warehouseId)
+				.addValue("zoneId", zoneId)
+				.addValue("locationId", locationId)
+				.addValue("quantity", quantity));
+	}
+
+	public BigDecimal getReservedQuantity(Long productId, Long locationId) {
+		BigDecimal quantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(quantity), 0)
+				FROM outbound_task
+				WHERE product_id = :productId
+				  AND location_id = :locationId
+				  AND status IN (2, 3)
+				""", new MapSqlParameterSource()
+				.addValue("productId", productId)
+				.addValue("locationId", locationId), BigDecimal.class);
+		return quantity == null ? BigDecimal.ZERO : quantity;
+	}
+
 	public List<InventoryLocationStockEntity> findAvailableStocks(
 			Long productId,
 			Long warehouseId,

@@ -94,6 +94,7 @@ const navigationSections: NavigationSection[] = [
       { label: '实时库存查询', path: '/inventory-stocks' },
       { label: '库存流水', path: '/inventory-transactions' },
       { label: '库存调整管理', path: '/inventory-adjustments' },
+      { label: '库存盘点管理', path: '/inventory-stocktakings' },
     ],
   },
   {
@@ -210,6 +211,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '库存调整管理',
     description:
       '处理系统初始化修正、人工纠错等非业务单据导致的库存变更，并沉淀标准调整记录和流水。',
+  },
+  '/inventory-stocktakings': {
+    title: '库存盘点管理',
+    description:
+      '创建盘点范围、录入实盘数量并确认差异回写库存，是库存治理闭环的最终环节。',
   },
 }
 
