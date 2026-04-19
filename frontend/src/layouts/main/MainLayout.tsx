@@ -60,6 +60,11 @@ const navigationSections: NavigationSection[] = [
   {
     label: '供应商与客户管理',
     icon: 'group',
+    expanded: true,
+    children: [
+      { label: '供应商管理', path: '/suppliers' },
+      { label: '客户管理' },
+    ],
   },
   {
     label: '入库管理',
@@ -132,6 +137,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '库位管理',
     description:
       '维护仓库内部实际可存放货物的库位信息，为上架、拣选和库存定位提供细粒度空间维度。',
+  },
+  '/suppliers': {
+    title: '供应商管理',
+    description:
+      '维护供应商主数据，为后续入库业务、到货协同和供应来源分析提供统一对象口径。',
   },
 }
 

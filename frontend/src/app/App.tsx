@@ -12,6 +12,7 @@ import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
+import SupplierPage from '../pages/supplier/SupplierPage'
 import WarehousePage from '../pages/warehouse/WarehousePage'
 import WarehouseLocationPage from '../pages/warehouse-location/WarehouseLocationPage'
 import WarehouseZonePage from '../pages/warehouse-zone/WarehouseZonePage'
@@ -35,6 +36,7 @@ function App() {
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
+            <Route path="/suppliers" element={<SupplierPage />} />
             <Route path="/warehouses" element={<WarehousePage />} />
             <Route path="/warehouse-locations" element={<WarehouseLocationPage />} />
             <Route path="/warehouse-zones" element={<WarehouseZonePage />} />
