@@ -50,6 +50,12 @@ const navigationSections: NavigationSection[] = [
   {
     label: '仓库管理',
     icon: 'warehouse',
+    expanded: true,
+    children: [
+      { label: '仓库信息管理', path: '/warehouses' },
+      { label: '库区管理' },
+      { label: '库位管理' },
+    ],
   },
   {
     label: '供应商与客户管理',
@@ -111,6 +117,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '品质等级管理',
     description:
       '维护统一品质等级口径，为产品档案、质检与损耗分析提供标准等级规则。',
+  },
+  '/warehouses': {
+    title: '仓库信息管理',
+    description:
+      '维护仓库主数据，为库区、库位以及后续入库、库存和出库业务提供统一仓库维度。',
   },
 }
 

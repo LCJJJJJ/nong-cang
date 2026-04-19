@@ -12,6 +12,7 @@ import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
+import WarehousePage from '../pages/warehouse/WarehousePage'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
+            <Route path="/warehouses" element={<WarehousePage />} />
           </Route>
           </Route>
 
