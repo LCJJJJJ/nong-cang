@@ -139,6 +139,12 @@ function WarehouseZonePage() {
       render: (row) => row.zoneCode,
     },
     {
+      key: 'warehouse',
+      title: '所属仓库',
+      minWidth: 180,
+      render: (row) => row.warehouseName,
+    },
+    {
       key: 'type',
       title: '库区类型',
       minWidth: 120,
