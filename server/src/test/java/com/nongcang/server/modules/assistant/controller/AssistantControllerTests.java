@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Transactional
@@ -106,7 +107,7 @@ class AssistantControllerTests {
 					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.data", Matchers.hasSize(1)));
+				.andExpect(jsonPath("$.data[?(@.id=='" + sessionId + "')]").isNotEmpty());
 
 		mockMvc.perform(get("/api/assistant/sessions/" + sessionId + "/messages")
 					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
@@ -114,6 +115,78 @@ class AssistantControllerTests {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data", Matchers.hasSize(2)))
 				.andExpect(jsonPath("$.data[1].resultBlocks[0].routePath").value("/warehouses"));
+	}
+
+	@Test
+	void shouldResolveChainedToolCallsForOutboundRecordQuery() throws Exception {
+		when(assistantLlmClient.chat(anyList(), anyList()))
+				.thenReturn(
+						new AssistantLlmResponse(
+								"",
+								List.of(new AssistantToolCall(
+										"tool-call-1",
+										"query_basic_master_data",
+										"""
+												{
+												  "entityType": "product",
+												  "keyword": "内酯豆腐",
+												  "limit": 5
+												}
+												"""))),
+						new AssistantLlmResponse(
+								"",
+								List.of(new AssistantToolCall(
+										"tool-call-2",
+										"query_outbound_data",
+										"""
+												{
+												  "entityType": "outbound_record",
+												  "keyword": "PROD-20260419083640261",
+												  "limit": 20
+												}
+												"""))),
+						new AssistantLlmResponse("已找到内酯豆腐的出库记录。", List.of()));
+
+		mockMvc.perform(post("/api/assistant/chat")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "message": "查一下内酯豆腐的出库记录",
+							  "routePath": "/outbound-records",
+							  "routeTitle": "出库记录查询"
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data.assistantMessage.resultBlocks[0].title").value("出库记录查询"))
+				.andExpect(jsonPath("$.data.assistantMessage.resultBlocks[0].rows[0].recordCode")
+						.value("OR-202604190001"));
+	}
+
+	@Test
+	void shouldStreamAssistantResponse() throws Exception {
+		when(assistantLlmClient.chat(anyList(), anyList()))
+				.thenReturn(new AssistantLlmResponse("正在为你整理仓库结果。", List.of()));
+
+		MvcResult mvcResult = mockMvc.perform(post("/api/assistant/chat/stream")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "message": "有哪些仓库",
+							  "routePath": "/warehouses",
+							  "routeTitle": "仓库信息管理"
+							}
+							"""))
+				.andExpect(request().asyncStarted())
+				.andReturn();
+
+		mvcResult.getAsyncResult(5000);
+
+		org.assertj.core.api.Assertions.assertThat(mvcResult.getResponse().getStatus()).isEqualTo(200);
+		org.assertj.core.api.Assertions.assertThat(mvcResult.getResponse().getContentType())
+				.contains(MediaType.TEXT_EVENT_STREAM_VALUE);
 	}
 
 	private String bearerToken() throws Exception {

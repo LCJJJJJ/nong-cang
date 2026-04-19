@@ -60,7 +60,23 @@
 - 生成的助手消息
 - 助手结构化结果块
 
-### 4. 刷新预警（通过助手工具执行）
+### 4. 流式发送对话消息
+
+`POST /api/assistant/chat/stream`
+
+响应类型：
+
+- `text/event-stream`
+
+事件类型：
+
+- `session`
+- `status`
+- `delta`
+- `done`
+- `error`
+
+### 5. 刷新预警（通过助手工具执行）
 
 不单独暴露页面接口，作为助手内部受控工具调用 `AlertRecordService.refreshAlertRecords()`。
 

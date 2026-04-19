@@ -5,12 +5,11 @@ import remarkGfm from 'remark-gfm'
 
 import { normalizeError, type AppError } from '../../api/errors'
 import {
-  chatWithAssistant,
   getAssistantMessages,
   getAssistantSessions,
+  streamAssistantChat,
 } from './api'
 import type {
-  AssistantChatResponse,
   AssistantMessage,
   AssistantResultBlock,
   AssistantSessionListItem,
@@ -80,6 +79,10 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
       return
     }
 
+    if (activeSessionId.startsWith('draft-')) {
+      return
+    }
+
     let isMounted = true
 
     const loadMessages = async () => {
@@ -127,6 +130,15 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
     [routePath, routeTitle],
   )
 
+  const handleCreateDraftSession = () => {
+    const draftSession = buildDraftSession(routePath, routeTitle)
+
+    setActiveSessionId(draftSession.id)
+    setMessages([])
+    setPageError(null)
+    setSessions((current) => mergeSessions([draftSession, ...current]))
+  }
+
   const handleSend = async () => {
     const content = draft.trim()
 
@@ -137,30 +149,128 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
     setIsSending(true)
     setPageError(null)
 
-    try {
-      const response = await chatWithAssistant({
-        sessionId: activeSessionId ? Number(activeSessionId) : undefined,
-        message: content,
-        routePath,
-        routeTitle,
-      })
+    const currentSessionId = activeSessionId
+    const isDraftSession = Boolean(currentSessionId?.startsWith('draft-'))
+    const tempUserId = `temp-user-${Date.now()}`
+    const tempAssistantId = `temp-assistant-${Date.now()}`
+    const timestamp = new Date().toISOString()
 
-      setDraft('')
-      setActiveSessionId(response.session.id)
-      setMessages((current) =>
-        activeSessionId === response.session.id
-          ? [...current, response.userMessage, response.assistantMessage]
-          : [response.userMessage, response.assistantMessage],
+    const optimisticUserMessage: AssistantMessage = {
+      id: tempUserId,
+      role: 'user',
+      content,
+      messageType: 'TEXT',
+      resultBlocks: null,
+      createdAt: timestamp,
+    }
+
+    const optimisticAssistantMessage: AssistantMessage = {
+      id: tempAssistantId,
+      role: 'assistant',
+      content: '',
+      messageType: 'TEXT',
+      resultBlocks: null,
+      createdAt: timestamp,
+    }
+
+    setDraft('')
+    setMessages((current) =>
+      currentSessionId
+        ? [...current, optimisticUserMessage, optimisticAssistantMessage]
+        : [optimisticUserMessage, optimisticAssistantMessage],
+    )
+
+    try {
+      await streamAssistantChat(
+        {
+          sessionId:
+            currentSessionId && !isDraftSession
+              ? Number(currentSessionId)
+              : undefined,
+          message: content,
+          routePath,
+          routeTitle,
+        },
+        {
+          onSession: (session) => {
+            setActiveSessionId(session.id)
+            setSessions((current) => {
+              const preservedPreview = current.find((item) => item.id === session.id)
+                ?.lastMessagePreview
+              const mergedSession = {
+                ...session,
+                lastMessagePreview: preservedPreview ?? session.lastMessagePreview,
+              }
+
+              return mergeSessions([
+                mergedSession,
+                ...current.filter((item) => item.id !== session.id && item.id !== currentSessionId),
+              ])
+            })
+          },
+          onStatus: (message) => {
+            setMessages((current) =>
+              current.map((item) =>
+                item.id === tempAssistantId && !item.content
+                  ? { ...item, content: `${message}\n\n` }
+                  : item,
+              ),
+            )
+          },
+          onDelta: (chunk) => {
+            setMessages((current) =>
+              current.map((item) =>
+                item.id === tempAssistantId
+                  ? {
+                      ...item,
+                      content: item.content.startsWith('正在') ? chunk : item.content + chunk,
+                    }
+                  : item,
+              ),
+            )
+          },
+          onDone: (response) => {
+            setActiveSessionId(response.session.id)
+            setMessages((current) =>
+              current.map((item) => {
+                if (item.id === tempUserId) {
+                  return response.userMessage
+                }
+
+                if (item.id === tempAssistantId) {
+                  return response.assistantMessage
+                }
+
+                return item
+              }),
+            )
+            setSessions((current) =>
+              mergeSessions([
+                {
+                  ...response.session,
+                  lastMessagePreview: response.assistantMessage.content,
+                },
+                ...current.filter(
+                  (item) =>
+                    item.id !== response.session.id &&
+                    item.id !== currentSessionId,
+                ),
+              ]),
+            )
+          },
+        },
       )
-      setSessions((current) => upsertSession(current, response))
     } catch (error) {
+      setMessages((current) =>
+        current.filter(
+          (item) => item.id !== tempUserId && item.id !== tempAssistantId,
+        ),
+      )
       setPageError(normalizeError(error))
     } finally {
       setIsSending(false)
     }
   }
-
-  const activeSession = sessions.find((item) => item.id === activeSessionId) ?? null
 
   return (
     <>
@@ -191,11 +301,7 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
               <button
                 type="button"
                 className="assistant-widget__ghost-button"
-                onClick={() => {
-                  setActiveSessionId(null)
-                  setMessages([])
-                  setPageError(null)
-                }}
+                onClick={handleCreateDraftSession}
               >
                 新对话
               </button>
@@ -236,13 +342,6 @@ function AssistantWidget({ routePath, routeTitle }: AssistantWidgetProps) {
             </aside>
 
             <section className="assistant-widget__conversation">
-              <div className="assistant-widget__conversation-head">
-                <div>
-                  <strong>{activeSession?.title ?? '新对话'}</strong>
-                  <span>{activeSession?.routeTitle ?? routeTitle}</span>
-                </div>
-              </div>
-
               {pageError ? (
                 <div className="assistant-widget__error">
                   <strong>{pageError.message}</strong>
@@ -387,16 +486,28 @@ function AssistantResultCard({
   )
 }
 
-function upsertSession(
-  currentSessions: AssistantSessionListItem[],
-  response: AssistantChatResponse,
-) {
-  const nextItem = {
-    ...response.session,
-    lastMessagePreview: response.assistantMessage.content,
-  }
+function mergeSessions(sessions: AssistantSessionListItem[]) {
+  const deduplicated = new Map<string, AssistantSessionListItem>()
 
-  return [nextItem, ...currentSessions.filter((item) => item.id !== response.session.id)]
+  sessions.forEach((session) => {
+    if (!deduplicated.has(session.id)) {
+      deduplicated.set(session.id, session)
+    }
+  })
+
+  return Array.from(deduplicated.values())
+}
+
+function buildDraftSession(routePath: string, routeTitle: string): AssistantSessionListItem {
+  return {
+    id: `draft-${Date.now()}`,
+    sessionCode: '',
+    title: '新对话',
+    routePath,
+    routeTitle,
+    lastMessagePreview: '等待发送第一条消息',
+    updatedAt: new Date().toISOString(),
+  }
 }
 
 function buildSuggestions(routePath: string, routeTitle: string) {
@@ -440,6 +551,10 @@ function formatDateTime(value?: string | null) {
 }
 
 function resolveSessionOperationSummary(session: AssistantSessionListItem) {
+  if (!session.sessionCode || session.id.startsWith('draft-')) {
+    return '等待发送第一条消息'
+  }
+
   const preview = session.lastMessagePreview?.trim() ?? ''
 
   if (preview.includes('预警刷新')) {

@@ -133,8 +133,7 @@ public class AssistantService {
 
 		String metadataJson = toolResults.isEmpty()
 				? null
-				: serialize(new AssistantMessageMetadata(
-						toolResults.stream().flatMap(result -> result.resultBlocks().stream()).toList()));
+				: serialize(new AssistantMessageMetadata(resolveUserFacingResultBlocks(toolResults)));
 
 		long assistantMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
 				null,
@@ -161,6 +160,123 @@ public class AssistantService {
 				toSessionListItemResponse(latestSession),
 				toMessageResponse(userMessage),
 				toMessageResponse(assistantMessage));
+	}
+
+	public void streamChat(
+			AssistantChatRequest request,
+			Authentication authentication,
+			AssistantStreamListener streamListener) {
+		AuthenticatedUser authenticatedUser = getAuthenticatedUser(authentication);
+		AssistantSessionEntity session = resolveSession(request, authenticatedUser);
+		AssistantSessionListItemResponse sessionResponse = toSessionListItemResponse(session);
+		streamListener.onSession(sessionResponse);
+
+		long userMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
+				null,
+				session.id(),
+				"user",
+				request.message().trim(),
+				"TEXT",
+				null,
+				null));
+
+		List<Map<String, Object>> llmMessages = buildLlmMessages(session, authenticatedUser, request);
+		List<AssistantToolExecutionResult> toolResults = new ArrayList<>();
+		StringBuilder assistantContentBuilder = new StringBuilder();
+
+		try {
+			boolean hasExecutedTool = false;
+			boolean shouldUseRealStreaming = false;
+			String fallbackDirectContent = null;
+
+			for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
+				streamListener.onStatus(hasExecutedTool ? "正在继续查询系统数据..." : "正在分析你的问题...");
+				AssistantLlmResponse planningResponse = assistantLlmClient.chat(
+						llmMessages,
+						assistantToolRegistry.getToolDefinitions());
+
+				if (planningResponse.toolCalls() == null || planningResponse.toolCalls().isEmpty()) {
+					if (hasExecutedTool) {
+						shouldUseRealStreaming = true;
+					} else {
+						fallbackDirectContent = StringUtils.hasText(planningResponse.content())
+								? planningResponse.content().trim()
+								: defaultAssistantContent(toolResults);
+					}
+					break;
+				}
+
+				hasExecutedTool = true;
+				streamListener.onStatus("正在查询系统数据...");
+				llmMessages.add(buildAssistantToolCallMessage(planningResponse));
+
+				for (AssistantToolCall toolCall : planningResponse.toolCalls()) {
+					AssistantToolExecutionResult toolResult = assistantToolRegistry.execute(
+							toolCall,
+							assistantProperties.getToolMaxRows());
+					toolResults.add(toolResult);
+					assistantToolAuditRepository.insert(new AssistantToolAuditEntity(
+							null,
+							session.id(),
+							userMessageId,
+							toolCall.name(),
+							toolCall.argumentsJson(),
+							serialize(toolResult),
+							1,
+							null));
+					llmMessages.add(Map.of(
+							"role", "tool",
+							"tool_call_id", toolCall.id(),
+							"content", toToolContent(toolResult)));
+				}
+			}
+
+			if (shouldUseRealStreaming) {
+				streamListener.onStatus("正在生成回答...");
+				assistantLlmClient.streamChat(llmMessages, List.of(), delta -> {
+					assistantContentBuilder.append(delta);
+					streamListener.onDelta(delta);
+				});
+			} else {
+				emitSimulatedStream(
+						StringUtils.hasText(fallbackDirectContent) ? fallbackDirectContent : defaultAssistantContent(toolResults),
+						streamListener,
+						assistantContentBuilder);
+			}
+
+			String metadataJson = toolResults.isEmpty()
+					? null
+					: serialize(new AssistantMessageMetadata(resolveUserFacingResultBlocks(toolResults)));
+
+			long assistantMessageId = assistantMessageRepository.insert(new AssistantMessageEntity(
+					null,
+					session.id(),
+					"assistant",
+					assistantContentBuilder.toString(),
+					toolResults.isEmpty() ? "TEXT" : "RESULT",
+					metadataJson,
+					null));
+
+			assistantSessionRepository.updateContext(session.id(), request.routePath(), request.routeTitle());
+
+			AssistantMessageEntity userMessage = assistantMessageRepository.findAllBySessionId(session.id()).stream()
+					.filter(message -> message.id().equals(userMessageId))
+					.findFirst()
+					.orElseThrow(() -> new BusinessException(CommonErrorCode.INTERNAL_SERVER_ERROR));
+			AssistantMessageEntity assistantMessage = assistantMessageRepository.findAllBySessionId(session.id()).stream()
+					.filter(message -> message.id().equals(assistantMessageId))
+					.findFirst()
+					.orElseThrow(() -> new BusinessException(CommonErrorCode.INTERNAL_SERVER_ERROR));
+
+			AssistantSessionEntity latestSession = getExistingSession(session.id(), authenticatedUser.userId());
+			streamListener.onDone(new AssistantChatResponse(
+					toSessionListItemResponse(latestSession),
+					toMessageResponse(userMessage),
+					toMessageResponse(assistantMessage)));
+		} catch (Exception exception) {
+			streamListener.onError(exception);
+			throw exception;
+		}
 	}
 
 	private AssistantSessionEntity resolveSession(AssistantChatRequest request, AuthenticatedUser authenticatedUser) {
@@ -251,6 +367,20 @@ public class AssistantService {
 		return toolResults.get(toolResults.size() - 1).summary();
 	}
 
+	private void emitSimulatedStream(
+			String content,
+			AssistantStreamListener streamListener,
+			StringBuilder assistantContentBuilder) {
+		if (!StringUtils.hasText(content)) {
+			return;
+		}
+
+		for (String chunk : splitIntoChunks(content)) {
+			assistantContentBuilder.append(chunk);
+			streamListener.onDelta(chunk);
+		}
+	}
+
 	private AssistantSessionListItemResponse toSessionListItemResponse(AssistantSessionEntity entity) {
 		return new AssistantSessionListItemResponse(
 				entity.id(),
@@ -322,5 +452,30 @@ public class AssistantService {
 		} catch (Exception exception) {
 			return "{}";
 		}
+	}
+
+	private List<String> splitIntoChunks(String content) {
+		List<String> chunks = new ArrayList<>();
+		int chunkSize = 18;
+		for (int index = 0; index < content.length(); index += chunkSize) {
+			chunks.add(content.substring(index, Math.min(content.length(), index + chunkSize)));
+		}
+		return chunks;
+	}
+
+	private List<AssistantResultBlock> resolveUserFacingResultBlocks(
+			List<AssistantToolExecutionResult> toolResults) {
+		if (toolResults.isEmpty()) {
+			return List.of();
+		}
+
+		for (int index = toolResults.size() - 1; index >= 0; index--) {
+			List<AssistantResultBlock> resultBlocks = toolResults.get(index).resultBlocks();
+			if (resultBlocks != null && !resultBlocks.isEmpty()) {
+				return resultBlocks;
+			}
+		}
+
+		return List.of();
 	}
 }
