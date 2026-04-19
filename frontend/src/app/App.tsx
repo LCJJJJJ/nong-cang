@@ -9,6 +9,7 @@ import AbnormalStockPage from '../pages/abnormal-stock/AbnormalStockPage'
 import AlertCenterPage from '../pages/alert-center/AlertCenterPage'
 import AlertRulePage from '../pages/alert-rule/AlertRulePage'
 import LoginPage from '../pages/auth/login/LoginPage'
+import MessageNoticePage from '../pages/message-notice/MessageNoticePage'
 import HomePage from '../pages/home/HomePage'
 import CustomerPage from '../pages/customer/CustomerPage'
 import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
@@ -73,6 +74,7 @@ function App() {
               />
               <Route path="/alert-rules" element={<AlertRulePage />} />
               <Route path="/alerts" element={<AlertCenterPage />} />
+              <Route path="/message-notices" element={<MessageNoticePage />} />
               <Route path="/quality-inspections" element={<QualityInspectionPage />} />
               <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
               <Route path="/loss-records" element={<LossRecordPage />} />

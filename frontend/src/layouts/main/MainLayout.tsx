@@ -114,6 +114,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '预警规则管理', path: '/alert-rules' },
       { label: '预警中心', path: '/alerts' },
+      { label: '消息中心', path: '/message-notices' },
     ],
   },
   {
@@ -252,6 +253,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '预警中心',
     description:
       '聚合当前活跃、已忽略和已恢复的预警记录，并支持手动刷新与忽略处理。',
+  },
+  '/message-notices': {
+    title: '消息中心',
+    description:
+      '查看由预警实例生成的系统消息，并支持单条已读和全部已读。',
   },
 }
 
