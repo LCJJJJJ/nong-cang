@@ -15,6 +15,7 @@ import com.nongcang.server.modules.inventorysupport.service.InventoryStockServic
 import com.nongcang.server.modules.outboundorder.domain.entity.OutboundOrderEntity;
 import com.nongcang.server.modules.outboundorder.domain.entity.OutboundOrderItemEntity;
 import com.nongcang.server.modules.outboundorder.repository.OutboundOrderRepository;
+import com.nongcang.server.modules.outboundrecord.service.OutboundRecordService;
 import com.nongcang.server.modules.outboundtask.domain.dto.OutboundAssignRequest;
 import com.nongcang.server.modules.outboundtask.domain.dto.OutboundTaskListQueryRequest;
 import com.nongcang.server.modules.outboundtask.domain.entity.OutboundTaskEntity;
@@ -53,6 +54,7 @@ public class OutboundTaskService {
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final InventoryStockRepository inventoryStockRepository;
 	private final InventoryStockService inventoryStockService;
+	private final OutboundRecordService outboundRecordService;
 
 	public OutboundTaskService(
 			OutboundTaskRepository outboundTaskRepository,
@@ -60,13 +62,15 @@ public class OutboundTaskService {
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
 			InventoryStockRepository inventoryStockRepository,
-			InventoryStockService inventoryStockService) {
+			InventoryStockService inventoryStockService,
+			OutboundRecordService outboundRecordService) {
 		this.outboundTaskRepository = outboundTaskRepository;
 		this.outboundOrderRepository = outboundOrderRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
 		this.inventoryStockService = inventoryStockService;
+		this.outboundRecordService = outboundRecordService;
 	}
 
 	public List<OutboundTaskListItemResponse> getOutboundTaskList(OutboundTaskListQueryRequest queryRequest) {
@@ -185,6 +189,7 @@ public class OutboundTaskService {
 		outboundTaskRepository.updateCompleted(id, STATUS_COMPLETED, LocalDateTime.now());
 		OutboundTaskEntity updatedTask = getExistingTask(id);
 		inventoryStockService.recordOutbound(updatedTask);
+		outboundRecordService.createRecord(updatedTask);
 		syncOrderStatus(task.outboundOrderId());
 	}
 

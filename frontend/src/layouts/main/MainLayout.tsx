@@ -83,6 +83,7 @@ const navigationSections: NavigationSection[] = [
     children: [
       { label: '出库单管理', path: '/outbound-orders' },
       { label: '拣货出库任务管理', path: '/outbound-tasks' },
+      { label: '出库记录查询', path: '/outbound-records' },
     ],
   },
   {
@@ -183,6 +184,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '拣货出库任务管理',
     description:
       '承接出库单明细，完成库存分配、拣货确认和最终出库扣减，作为库存减少的直接入口。',
+  },
+  '/outbound-records': {
+    title: '出库记录查询',
+    description:
+      '查询已完成出库的最终结果，统一追踪客户、仓库、库位、产品和实际出库时间。',
   },
 }
 

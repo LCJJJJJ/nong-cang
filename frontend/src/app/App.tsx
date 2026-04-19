@@ -11,6 +11,7 @@ import CustomerPage from '../pages/customer/CustomerPage'
 import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import InboundRecordPage from '../pages/inbound-record/InboundRecordPage'
 import OutboundOrderPage from '../pages/outbound-order/OutboundOrderPage'
+import OutboundRecordPage from '../pages/outbound-record/OutboundRecordPage'
 import OutboundTaskPage from '../pages/outbound-task/OutboundTaskPage'
 import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
@@ -47,6 +48,7 @@ function App() {
               <Route path="/inbound-records" element={<InboundRecordPage />} />
               <Route path="/outbound-orders" element={<OutboundOrderPage />} />
               <Route path="/outbound-tasks" element={<OutboundTaskPage />} />
+              <Route path="/outbound-records" element={<OutboundRecordPage />} />
               <Route path="/storage-conditions" element={<StorageConditionPage />} />
               <Route path="/suppliers" element={<SupplierPage />} />
               <Route path="/warehouses" element={<WarehousePage />} />
