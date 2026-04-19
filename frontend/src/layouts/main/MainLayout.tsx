@@ -111,7 +111,10 @@ const navigationSections: NavigationSection[] = [
     label: '预警与消息提醒',
     icon: 'alert',
     expanded: true,
-    children: [{ label: '预警规则管理', path: '/alert-rules' }],
+    children: [
+      { label: '预警规则管理', path: '/alert-rules' },
+      { label: '预警中心', path: '/alerts' },
+    ],
   },
   {
     label: '统计分析与报表',
@@ -244,6 +247,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '预警规则管理',
     description:
       '维护系统内置预警阈值和严重级别，并可手动刷新预警实例。',
+  },
+  '/alerts': {
+    title: '预警中心',
+    description:
+      '聚合当前活跃、已忽略和已恢复的预警记录，并支持手动刷新与忽略处理。',
   },
 }
 

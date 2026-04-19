@@ -6,6 +6,7 @@ import RequireAuth from '../features/auth/RequireAuth'
 import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
 import AbnormalStockPage from '../pages/abnormal-stock/AbnormalStockPage'
+import AlertCenterPage from '../pages/alert-center/AlertCenterPage'
 import AlertRulePage from '../pages/alert-rule/AlertRulePage'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
@@ -71,6 +72,7 @@ function App() {
                 element={<InventoryStocktakingPage />}
               />
               <Route path="/alert-rules" element={<AlertRulePage />} />
+              <Route path="/alerts" element={<AlertCenterPage />} />
               <Route path="/quality-inspections" element={<QualityInspectionPage />} />
               <Route path="/abnormal-stocks" element={<AbnormalStockPage />} />
               <Route path="/loss-records" element={<LossRecordPage />} />
