@@ -7,6 +7,7 @@ import AuthLayout from '../layouts/auth/AuthLayout'
 import MainLayout from '../layouts/main/MainLayout'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
+import CustomerPage from '../pages/customer/CustomerPage'
 import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
@@ -35,6 +36,7 @@ function App() {
             <Route path="/product-origins" element={<ProductOriginPage />} />
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />
+            <Route path="/customers" element={<CustomerPage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
             <Route path="/suppliers" element={<SupplierPage />} />
             <Route path="/warehouses" element={<WarehousePage />} />

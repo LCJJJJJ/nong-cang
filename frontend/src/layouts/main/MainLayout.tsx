@@ -63,7 +63,7 @@ const navigationSections: NavigationSection[] = [
     expanded: true,
     children: [
       { label: '供应商管理', path: '/suppliers' },
-      { label: '客户管理' },
+      { label: '客户管理', path: '/customers' },
     ],
   },
   {
@@ -142,6 +142,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '供应商管理',
     description:
       '维护供应商主数据，为后续入库业务、到货协同和供应来源分析提供统一对象口径。',
+  },
+  '/customers': {
+    title: '客户管理',
+    description:
+      '维护客户主数据，为后续出库业务、配送协同和客户去向分析提供统一对象口径。',
   },
 }
 
