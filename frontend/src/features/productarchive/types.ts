@@ -26,6 +26,14 @@ export interface ProductArchiveListItem {
 
 export type ProductArchiveDetail = ProductArchiveListItem
 
+export interface ProductArchiveOption {
+  id: string
+  label: string
+  unitName: string
+  unitSymbol: string
+  status: number
+}
+
 export interface ProductArchiveListQuery {
   productCode?: string
   productName?: string

@@ -46,6 +46,15 @@ class ProductArchiveControllerTests {
 	}
 
 	@Test
+	void shouldReturnProductArchiveOptions() throws Exception {
+		mockMvc.perform(get("/api/product-archive/options").header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.data[0].label").isNotEmpty())
+				.andExpect(jsonPath("$.data[0].unitName").isNotEmpty());
+	}
+
+	@Test
 	void shouldCreateProductArchive() throws Exception {
 		mockMvc.perform(post("/api/product-archive")
 					.header(HttpHeaders.AUTHORIZATION, bearerToken())

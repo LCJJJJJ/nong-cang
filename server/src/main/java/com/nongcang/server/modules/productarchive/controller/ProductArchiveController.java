@@ -9,6 +9,7 @@ import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveStatu
 import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveUpdateRequest;
 import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveDetailResponse;
 import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveListItemResponse;
+import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveOptionResponse;
 import com.nongcang.server.modules.productarchive.service.ProductArchiveService;
 import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
@@ -38,6 +39,11 @@ public class ProductArchiveController {
 	public ApiResponse<List<ProductArchiveListItemResponse>> getProductArchiveList(
 			@Valid @ModelAttribute ProductArchiveListQueryRequest queryRequest) {
 		return ApiResponse.success(productArchiveService.getProductArchiveList(queryRequest));
+	}
+
+	@GetMapping("/options")
+	public ApiResponse<List<ProductArchiveOptionResponse>> getProductArchiveOptions() {
+		return ApiResponse.success(productArchiveService.getProductArchiveOptions());
 	}
 
 	@GetMapping("/{id}")

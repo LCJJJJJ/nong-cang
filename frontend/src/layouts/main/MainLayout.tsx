@@ -69,6 +69,12 @@ const navigationSections: NavigationSection[] = [
   {
     label: '入库管理',
     icon: 'inbound',
+    expanded: true,
+    children: [
+      { label: '入库单管理', path: '/inbound-orders' },
+      { label: '上架任务管理' },
+      { label: '入库记录查询' },
+    ],
   },
   {
     label: '出库管理',
@@ -147,6 +153,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '客户管理',
     description:
       '维护客户主数据，为后续出库业务、配送协同和客户去向分析提供统一对象口径。',
+  },
+  '/inbound-orders': {
+    title: '入库单管理',
+    description:
+      '维护到货前的入库业务单据，关联供应商、仓库和产品明细，为后续上架任务生成提供业务入口。',
   },
 }
 

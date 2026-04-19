@@ -5,6 +5,7 @@ import type {
   ProductArchiveFormPayload,
   ProductArchiveListItem,
   ProductArchiveListQuery,
+  ProductArchiveOption,
 } from './types'
 
 export function getProductArchiveList(query?: ProductArchiveListQuery) {
@@ -12,6 +13,13 @@ export function getProductArchiveList(query?: ProductArchiveListQuery) {
     method: 'GET',
     url: '/product-archive/list',
     params: query,
+  })
+}
+
+export function getProductArchiveOptions() {
+  return request<ProductArchiveOption[]>({
+    method: 'GET',
+    url: '/product-archive/options',
   })
 }
 

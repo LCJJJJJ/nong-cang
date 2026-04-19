@@ -8,6 +8,7 @@ import MainLayout from '../layouts/main/MainLayout'
 import LoginPage from '../pages/auth/login/LoginPage'
 import HomePage from '../pages/home/HomePage'
 import CustomerPage from '../pages/customer/CustomerPage'
+import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
@@ -37,6 +38,7 @@ function App() {
             <Route path="/product-units" element={<ProductUnitPage />} />
             <Route path="/quality-grades" element={<QualityGradePage />} />
             <Route path="/customers" element={<CustomerPage />} />
+            <Route path="/inbound-orders" element={<InboundOrderPage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
             <Route path="/suppliers" element={<SupplierPage />} />
             <Route path="/warehouses" element={<WarehousePage />} />

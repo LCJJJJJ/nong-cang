@@ -16,6 +16,7 @@ import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveUpdat
 import com.nongcang.server.modules.productarchive.domain.entity.ProductArchiveEntity;
 import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveDetailResponse;
 import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveListItemResponse;
+import com.nongcang.server.modules.productarchive.domain.vo.ProductArchiveOptionResponse;
 import com.nongcang.server.modules.productarchive.repository.ProductArchiveRepository;
 import com.nongcang.server.modules.productorigin.repository.ProductOriginRepository;
 import com.nongcang.server.modules.productunit.repository.ProductUnitRepository;
@@ -60,6 +61,19 @@ public class ProductArchiveService {
 				.stream()
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
+				.toList();
+	}
+
+	public List<ProductArchiveOptionResponse> getProductArchiveOptions() {
+		return productArchiveRepository.findAll()
+				.stream()
+				.filter(entity -> ENABLED == entity.status())
+				.map(entity -> new ProductArchiveOptionResponse(
+						entity.id(),
+						entity.productName(),
+						entity.unitName(),
+						entity.unitSymbol(),
+						entity.status()))
 				.toList();
 	}
 
