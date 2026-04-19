@@ -20,8 +20,6 @@ import com.nongcang.server.modules.productarchive.repository.ProductArchiveRepos
 import com.nongcang.server.modules.productorigin.repository.ProductOriginRepository;
 import com.nongcang.server.modules.productunit.repository.ProductUnitRepository;
 import com.nongcang.server.modules.qualitygrade.repository.QualityGradeRepository;
-import com.nongcang.server.modules.shelfliferule.domain.entity.ShelfLifeRuleEntity;
-import com.nongcang.server.modules.shelfliferule.repository.ShelfLifeRuleRepository;
 import com.nongcang.server.modules.storagecondition.repository.StorageConditionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +38,6 @@ public class ProductArchiveService {
 	private final ProductUnitRepository productUnitRepository;
 	private final ProductOriginRepository productOriginRepository;
 	private final StorageConditionRepository storageConditionRepository;
-	private final ShelfLifeRuleRepository shelfLifeRuleRepository;
 	private final QualityGradeRepository qualityGradeRepository;
 
 	public ProductArchiveService(
@@ -49,14 +46,12 @@ public class ProductArchiveService {
 			ProductUnitRepository productUnitRepository,
 			ProductOriginRepository productOriginRepository,
 			StorageConditionRepository storageConditionRepository,
-			ShelfLifeRuleRepository shelfLifeRuleRepository,
 			QualityGradeRepository qualityGradeRepository) {
 		this.productArchiveRepository = productArchiveRepository;
 		this.categoryRepository = categoryRepository;
 		this.productUnitRepository = productUnitRepository;
 		this.productOriginRepository = productOriginRepository;
 		this.storageConditionRepository = storageConditionRepository;
-		this.shelfLifeRuleRepository = shelfLifeRuleRepository;
 		this.qualityGradeRepository = qualityGradeRepository;
 	}
 
@@ -91,8 +86,8 @@ public class ProductArchiveService {
 				null,
 				request.storageConditionId(),
 				null,
-				request.shelfLifeRuleId(),
-				null,
+				request.shelfLifeDays(),
+				request.warningDays(),
 				request.qualityGradeId(),
 				null,
 				request.status(),
@@ -126,8 +121,8 @@ public class ProductArchiveService {
 				null,
 				request.storageConditionId(),
 				null,
-				request.shelfLifeRuleId(),
-				null,
+				request.shelfLifeDays(),
+				request.warningDays(),
 				request.qualityGradeId(),
 				null,
 				request.status(),
@@ -190,9 +185,7 @@ public class ProductArchiveService {
 		resolveUnitId(request.unitId());
 		resolveOriginId(request.originId());
 		resolveStorageConditionId(request.storageConditionId());
-		ShelfLifeRuleEntity shelfLifeRule = resolveShelfLifeRuleId(request.shelfLifeRuleId());
 		resolveQualityGradeId(request.qualityGradeId());
-		validateShelfLifeRuleScope(shelfLifeRule, request.categoryId(), request.storageConditionId());
 	}
 
 	private void validateReferences(ProductArchiveUpdateRequest request) {
@@ -200,9 +193,7 @@ public class ProductArchiveService {
 		resolveUnitId(request.unitId());
 		resolveOriginId(request.originId());
 		resolveStorageConditionId(request.storageConditionId());
-		ShelfLifeRuleEntity shelfLifeRule = resolveShelfLifeRuleId(request.shelfLifeRuleId());
 		resolveQualityGradeId(request.qualityGradeId());
-		validateShelfLifeRuleScope(shelfLifeRule, request.categoryId(), request.storageConditionId());
 	}
 
 	private Long resolveCategoryId(Long categoryId) {
@@ -229,29 +220,10 @@ public class ProductArchiveService {
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.STORAGE_CONDITION_NOT_FOUND));
 	}
 
-	private ShelfLifeRuleEntity resolveShelfLifeRuleId(Long shelfLifeRuleId) {
-		return shelfLifeRuleRepository.findById(shelfLifeRuleId)
-				.orElseThrow(() -> new BusinessException(CommonErrorCode.SHELF_LIFE_RULE_NOT_FOUND));
-	}
-
 	private Long resolveQualityGradeId(Long qualityGradeId) {
 		return qualityGradeRepository.findById(qualityGradeId)
 				.map(qualityGrade -> qualityGrade.id())
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.QUALITY_GRADE_NOT_FOUND));
-	}
-
-	private void validateShelfLifeRuleScope(
-			ShelfLifeRuleEntity shelfLifeRule,
-			Long categoryId,
-			Long storageConditionId) {
-		if (shelfLifeRule.categoryId() != null && !Objects.equals(shelfLifeRule.categoryId(), categoryId)) {
-			throw new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_RULE_SCOPE_INVALID);
-		}
-
-		if (shelfLifeRule.storageConditionId() != null
-				&& !Objects.equals(shelfLifeRule.storageConditionId(), storageConditionId)) {
-			throw new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_RULE_SCOPE_INVALID);
-		}
 	}
 
 	private String generateProductCode() {
@@ -285,8 +257,8 @@ public class ProductArchiveService {
 				entity.originName(),
 				entity.storageConditionId(),
 				entity.storageConditionName(),
-				entity.shelfLifeRuleId(),
-				entity.shelfLifeRuleName(),
+				entity.shelfLifeDays(),
+				entity.warningDays(),
 				entity.qualityGradeId(),
 				entity.qualityGradeName(),
 				entity.status(),
@@ -312,8 +284,8 @@ public class ProductArchiveService {
 				entity.originName(),
 				entity.storageConditionId(),
 				entity.storageConditionName(),
-				entity.shelfLifeRuleId(),
-				entity.shelfLifeRuleName(),
+				entity.shelfLifeDays(),
+				entity.warningDays(),
 				entity.qualityGradeId(),
 				entity.qualityGradeName(),
 				entity.status(),

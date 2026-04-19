@@ -12,8 +12,8 @@ export interface ProductArchiveListItem {
   originName: string
   storageConditionId: string
   storageConditionName: string
-  shelfLifeRuleId: string
-  shelfLifeRuleName: string
+  shelfLifeDays: number
+  warningDays: number
   qualityGradeId: string
   qualityGradeName: string
   status: number
@@ -40,7 +40,8 @@ export interface ProductArchiveFormPayload {
   unitId: number
   originId: number
   storageConditionId: number
-  shelfLifeRuleId: number
+  shelfLifeDays: number
+  warningDays: number
   qualityGradeId: number
   status: number
   sortOrder: number

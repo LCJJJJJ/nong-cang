@@ -141,7 +141,6 @@ public class StorageConditionService {
 		getExistingStorageCondition(id);
 
 		if (storageConditionRepository.countCategoryReferences(id) > 0
-				|| storageConditionRepository.countShelfLifeRuleReferences(id) > 0
 				|| storageConditionRepository.countProductArchiveReferences(id) > 0) {
 			throw new BusinessException(CommonErrorCode.STORAGE_CONDITION_IN_USE);
 		}

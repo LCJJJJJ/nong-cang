@@ -27,8 +27,6 @@ import { getProductUnitOptions } from '../../features/productunit/api'
 import type { ProductUnitOption } from '../../features/productunit/types'
 import { getQualityGradeOptions } from '../../features/qualitygrade/api'
 import type { QualityGradeOption } from '../../features/qualitygrade/types'
-import { getShelfLifeRuleOptions } from '../../features/shelfliferule/api'
-import type { ShelfLifeRuleOption } from '../../features/shelfliferule/types'
 import { getStorageConditionOptions } from '../../features/storagecondition/api'
 import type { StorageConditionOption } from '../../features/storagecondition/types'
 import './ProductArchivePage.css'
@@ -43,7 +41,8 @@ interface ProductArchiveFormState {
   unitId: string
   originId: string
   storageConditionId: string
-  shelfLifeRuleId: string
+  shelfLifeDays: string
+  warningDays: string
   qualityGradeId: string
   status: string
   sortOrder: string
@@ -58,7 +57,8 @@ const initialFormState: ProductArchiveFormState = {
   unitId: '',
   originId: '',
   storageConditionId: '',
-  shelfLifeRuleId: '',
+  shelfLifeDays: '',
+  warningDays: '0',
   qualityGradeId: '',
   status: '1',
   sortOrder: '0',
@@ -78,9 +78,6 @@ function ProductArchivePage() {
   const [productOriginOptions, setProductOriginOptions] = useState<ProductOriginOption[]>([])
   const [storageConditionOptions, setStorageConditionOptions] = useState<
     StorageConditionOption[]
-  >([])
-  const [shelfLifeRuleOptions, setShelfLifeRuleOptions] = useState<
-    ShelfLifeRuleOption[]
   >([])
   const [qualityGradeOptions, setQualityGradeOptions] = useState<QualityGradeOption[]>(
     [],
@@ -105,23 +102,15 @@ function ProductArchivePage() {
 
     const bootstrap = async () => {
       try {
-        const [
-          list,
-          categories,
-          units,
-          origins,
-          storageConditions,
-          shelfLifeRules,
-          qualityGrades,
-        ] = await Promise.all([
-          getProductArchiveList(),
-          getCategoryOptions(),
-          getProductUnitOptions(),
-          getProductOriginOptions(),
-          getStorageConditionOptions(),
-          getShelfLifeRuleOptions(),
-          getQualityGradeOptions(),
-        ])
+        const [list, categories, units, origins, storageConditions, qualityGrades] =
+          await Promise.all([
+            getProductArchiveList(),
+            getCategoryOptions(),
+            getProductUnitOptions(),
+            getProductOriginOptions(),
+            getStorageConditionOptions(),
+            getQualityGradeOptions(),
+          ])
 
         if (!isMounted) {
           return
@@ -132,7 +121,6 @@ function ProductArchivePage() {
         setProductUnitOptions(units)
         setProductOriginOptions(origins)
         setStorageConditionOptions(storageConditions)
-        setShelfLifeRuleOptions(shelfLifeRules)
         setQualityGradeOptions(qualityGrades)
       } catch (error) {
         if (!isMounted) {
@@ -212,9 +200,15 @@ function ProductArchivePage() {
     },
     {
       key: 'shelfLife',
-      title: '保质期规则',
-      minWidth: 180,
-      render: (row) => row.shelfLifeRuleName,
+      title: '保质期',
+      minWidth: 120,
+      render: (row) => `${row.shelfLifeDays} 天`,
+    },
+    {
+      key: 'warning',
+      title: '预警提前',
+      minWidth: 120,
+      render: (row) => `${row.warningDays} 天`,
     },
     {
       key: 'grade',
@@ -457,7 +451,7 @@ function ProductArchivePage() {
       <section className="product-archive-page__toolbar">
         <div className="product-archive-page__toolbar-copy">
           <h3>产品档案列表</h3>
-          <p>维护农产品主数据档案，统一挂接分类、单位、产地、储存条件、保质期规则和品质等级。</p>
+          <p>维护农产品主数据档案，统一挂接分类、单位、产地、储存条件和品质等级，并直接维护保质期信息。</p>
         </div>
 
         <button type="button" className="product-archive-page__primary" onClick={handleCreate}>
@@ -483,7 +477,7 @@ function ProductArchivePage() {
             <div className="product-archive-page__dialog-header">
               <div>
                 <h3>{dialogMode === 'create' ? '新增产品档案' : '编辑产品档案'}</h3>
-                <p>维护产品主数据，并关联分类、单位、产地、储存条件、保质期规则和品质等级。</p>
+                <p>维护产品主数据，并关联分类、单位、产地、储存条件和品质等级，同时直接填写保质期信息。</p>
               </div>
               <button
                 type="button"
@@ -613,23 +607,33 @@ function ProductArchivePage() {
               </label>
 
               <label className="product-archive-page__field">
-                <span>保质期规则</span>
-                <select
-                  value={formState.shelfLifeRuleId}
+                <span>保质期天数</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={formState.shelfLifeDays}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      shelfLifeRuleId: event.target.value,
+                      shelfLifeDays: event.target.value,
                     }))
                   }
-                >
-                  <option value="">请选择</option>
-                  {shelfLifeRuleOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}（{option.shelfLifeDays}天）
-                    </option>
-                  ))}
-                </select>
+                />
+              </label>
+
+              <label className="product-archive-page__field">
+                <span>预警提前天数</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={formState.warningDays}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      warningDays: event.target.value,
+                    }))
+                  }
+                />
               </label>
 
               <label className="product-archive-page__field">
@@ -750,7 +754,8 @@ function mapDetailToFormState(detail: ProductArchiveDetail): ProductArchiveFormS
     unitId: detail.unitId,
     originId: detail.originId,
     storageConditionId: detail.storageConditionId,
-    shelfLifeRuleId: detail.shelfLifeRuleId,
+    shelfLifeDays: String(detail.shelfLifeDays),
+    warningDays: String(detail.warningDays),
     qualityGradeId: detail.qualityGradeId,
     status: String(detail.status),
     sortOrder: String(detail.sortOrder),
@@ -768,7 +773,8 @@ function mapFormStateToPayload(
     unitId: Number(formState.unitId),
     originId: Number(formState.originId),
     storageConditionId: Number(formState.storageConditionId),
-    shelfLifeRuleId: Number(formState.shelfLifeRuleId),
+    shelfLifeDays: Number(formState.shelfLifeDays),
+    warningDays: Number(formState.warningDays),
     qualityGradeId: Number(formState.qualityGradeId),
     status: Number(formState.status),
     sortOrder: Number(formState.sortOrder),

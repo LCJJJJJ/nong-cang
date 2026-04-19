@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS `product_archive` (
   `unit_id` BIGINT NOT NULL COMMENT '产品单位ID',
   `origin_id` BIGINT NOT NULL COMMENT '产地信息ID',
   `storage_condition_id` BIGINT NOT NULL COMMENT '储存条件ID',
-  `shelf_life_rule_id` BIGINT NOT NULL COMMENT '保质期规则ID',
+  `shelf_life_days` INT NOT NULL COMMENT '保质期天数',
+  `warning_days` INT NOT NULL DEFAULT 0 COMMENT '预警提前天数',
   `quality_grade_id` BIGINT NOT NULL COMMENT '品质等级ID',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序值',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1启用，0停用',
@@ -24,13 +25,11 @@ CREATE TABLE IF NOT EXISTS `product_archive` (
   KEY `idx_product_archive_unit` (`unit_id`),
   KEY `idx_product_archive_origin` (`origin_id`),
   KEY `idx_product_archive_storage_condition` (`storage_condition_id`),
-  KEY `idx_product_archive_shelf_life_rule` (`shelf_life_rule_id`),
   KEY `idx_product_archive_quality_grade` (`quality_grade_id`),
   CONSTRAINT `fk_product_archive_category` FOREIGN KEY (`category_id`) REFERENCES `product_category` (`id`),
   CONSTRAINT `fk_product_archive_unit` FOREIGN KEY (`unit_id`) REFERENCES `product_unit` (`id`),
   CONSTRAINT `fk_product_archive_origin` FOREIGN KEY (`origin_id`) REFERENCES `product_origin` (`id`),
   CONSTRAINT `fk_product_archive_storage_condition` FOREIGN KEY (`storage_condition_id`) REFERENCES `storage_condition` (`id`),
-  CONSTRAINT `fk_product_archive_shelf_life_rule` FOREIGN KEY (`shelf_life_rule_id`) REFERENCES `shelf_life_rule` (`id`),
   CONSTRAINT `fk_product_archive_quality_grade` FOREIGN KEY (`quality_grade_id`) REFERENCES `quality_grade` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='产品档案表';
 
@@ -42,7 +41,8 @@ INSERT INTO `product_archive` (
   `unit_id`,
   `origin_id`,
   `storage_condition_id`,
-  `shelf_life_rule_id`,
+  `shelf_life_days`,
+  `warning_days`,
   `quality_grade_id`,
   `sort_order`,
   `status`,
@@ -56,7 +56,8 @@ SELECT
   unit.`id`,
   origin.`id`,
   storage_condition.`id`,
-  shelf_life_rule.`id`,
+  5,
+  1,
   quality_grade.`id`,
   10,
   1,
@@ -65,7 +66,6 @@ FROM `product_category` category
 JOIN `product_unit` unit ON unit.`unit_code` = 'UNIT-202604190001'
 JOIN `product_origin` origin ON origin.`origin_code` = 'ORI-202604190001'
 JOIN `storage_condition` storage_condition ON storage_condition.`condition_code` = 'SC-202604190001'
-JOIN `shelf_life_rule` shelf_life_rule ON shelf_life_rule.`rule_code` = 'RULE-202604190001'
 JOIN `quality_grade` quality_grade ON quality_grade.`grade_code` = 'GRADE-202604190001'
 WHERE category.`category_code` = 'CAT-A01-01'
   AND NOT EXISTS (
@@ -80,7 +80,8 @@ INSERT INTO `product_archive` (
   `unit_id`,
   `origin_id`,
   `storage_condition_id`,
-  `shelf_life_rule_id`,
+  `shelf_life_days`,
+  `warning_days`,
   `quality_grade_id`,
   `sort_order`,
   `status`,
@@ -94,7 +95,8 @@ SELECT
   unit.`id`,
   origin.`id`,
   storage_condition.`id`,
-  shelf_life_rule.`id`,
+  15,
+  3,
   quality_grade.`id`,
   20,
   1,
@@ -103,7 +105,6 @@ FROM `product_category` category
 JOIN `product_unit` unit ON unit.`unit_code` = 'UNIT-202604190001'
 JOIN `product_origin` origin ON origin.`origin_code` = 'ORI-202604190001'
 JOIN `storage_condition` storage_condition ON storage_condition.`condition_code` = 'SC-202604190002'
-JOIN `shelf_life_rule` shelf_life_rule ON shelf_life_rule.`rule_code` = 'RULE-202604190002'
 JOIN `quality_grade` quality_grade ON quality_grade.`grade_code` = 'GRADE-202604190002'
 WHERE category.`category_code` = 'CAT-A02'
   AND NOT EXISTS (
@@ -118,7 +119,8 @@ INSERT INTO `product_archive` (
   `unit_id`,
   `origin_id`,
   `storage_condition_id`,
-  `shelf_life_rule_id`,
+  `shelf_life_days`,
+  `warning_days`,
   `quality_grade_id`,
   `sort_order`,
   `status`,
@@ -132,7 +134,8 @@ SELECT
   unit.`id`,
   origin.`id`,
   storage_condition.`id`,
-  shelf_life_rule.`id`,
+  12,
+  2,
   quality_grade.`id`,
   30,
   1,
@@ -141,7 +144,6 @@ FROM `product_category` category
 JOIN `product_unit` unit ON unit.`unit_code` = 'UNIT-202604190002'
 JOIN `product_origin` origin ON origin.`origin_code` = 'ORI-202604190003'
 JOIN `storage_condition` storage_condition ON storage_condition.`condition_code` = 'SC-202604190003'
-JOIN `shelf_life_rule` shelf_life_rule ON shelf_life_rule.`rule_code` = 'RULE-202604190003'
 JOIN `quality_grade` quality_grade ON quality_grade.`grade_code` = 'GRADE-202604190001'
 WHERE category.`category_code` = 'CAT-B01'
   AND NOT EXISTS (

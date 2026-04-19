@@ -44,7 +44,6 @@ const navigationSections: NavigationSection[] = [
       { label: '产品单位管理', path: '/product-units' },
       { label: '产地信息管理', path: '/product-origins' },
       { label: '储存条件管理', path: '/storage-conditions' },
-      { label: '保质期规则管理', path: '/shelf-life-rules' },
       { label: '品质等级管理', path: '/quality-grades' },
     ],
   },
@@ -91,7 +90,7 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
   '/product-archives': {
     title: '产品档案管理',
     description:
-      '维护农产品主数据档案，统一挂接分类、单位、产地、储存条件、保质期规则和品质等级。',
+      '维护农产品主数据档案，统一挂接分类、单位、产地、储存条件和品质等级，并直接维护保质期信息。',
   },
   '/storage-conditions': {
     title: '储存条件管理',
@@ -112,11 +111,6 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '品质等级管理',
     description:
       '维护统一品质等级口径，为产品档案、质检与损耗分析提供标准等级规则。',
-  },
-  '/shelf-life-rules': {
-    title: '保质期规则管理',
-    description:
-      '维护分类与储存条件组合下的保质期规则，为产品档案和库存预警提供统一依据。',
   },
 }
 

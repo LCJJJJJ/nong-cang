@@ -32,8 +32,8 @@ public class ProductArchiveRepository {
 			  po.origin_name,
 			  pa.storage_condition_id,
 			  sc.condition_name AS storage_condition_name,
-			  pa.shelf_life_rule_id,
-			  slr.rule_name AS shelf_life_rule_name,
+			  pa.shelf_life_days,
+			  pa.warning_days,
 			  pa.quality_grade_id,
 			  qg.grade_name AS quality_grade_name,
 			  pa.status,
@@ -46,7 +46,6 @@ public class ProductArchiveRepository {
 			JOIN product_unit pu ON pu.id = pa.unit_id
 			JOIN product_origin po ON po.id = pa.origin_id
 			JOIN storage_condition sc ON sc.id = pa.storage_condition_id
-			JOIN shelf_life_rule slr ON slr.id = pa.shelf_life_rule_id
 			JOIN quality_grade qg ON qg.id = pa.quality_grade_id
 			""";
 
@@ -67,8 +66,8 @@ public class ProductArchiveRepository {
 					rs.getString("origin_name"),
 					rs.getLong("storage_condition_id"),
 					rs.getString("storage_condition_name"),
-					rs.getLong("shelf_life_rule_id"),
-					rs.getString("shelf_life_rule_name"),
+					rs.getInt("shelf_life_days"),
+					rs.getInt("warning_days"),
 					rs.getLong("quality_grade_id"),
 					rs.getString("quality_grade_name"),
 					rs.getInt("status"),
@@ -143,7 +142,8 @@ public class ProductArchiveRepository {
 				  unit_id,
 				  origin_id,
 				  storage_condition_id,
-				  shelf_life_rule_id,
+				  shelf_life_days,
+				  warning_days,
 				  quality_grade_id,
 				  status,
 				  sort_order,
@@ -157,7 +157,8 @@ public class ProductArchiveRepository {
 				  :unitId,
 				  :originId,
 				  :storageConditionId,
-				  :shelfLifeRuleId,
+				  :shelfLifeDays,
+				  :warningDays,
 				  :qualityGradeId,
 				  :status,
 				  :sortOrder,
@@ -177,7 +178,8 @@ public class ProductArchiveRepository {
 				    unit_id = :unitId,
 				    origin_id = :originId,
 				    storage_condition_id = :storageConditionId,
-				    shelf_life_rule_id = :shelfLifeRuleId,
+				    shelf_life_days = :shelfLifeDays,
+				    warning_days = :warningDays,
 				    quality_grade_id = :qualityGradeId,
 				    status = :status,
 				    sort_order = :sortOrder,
@@ -219,10 +221,6 @@ public class ProductArchiveRepository {
 		return countByReference("storage_condition_id", storageConditionId);
 	}
 
-	public long countByShelfLifeRuleId(Long shelfLifeRuleId) {
-		return countByReference("shelf_life_rule_id", shelfLifeRuleId);
-	}
-
 	public long countByQualityGradeId(Long qualityGradeId) {
 		return countByReference("quality_grade_id", qualityGradeId);
 	}
@@ -244,7 +242,8 @@ public class ProductArchiveRepository {
 				.addValue("unitId", productArchiveEntity.unitId())
 				.addValue("originId", productArchiveEntity.originId())
 				.addValue("storageConditionId", productArchiveEntity.storageConditionId())
-				.addValue("shelfLifeRuleId", productArchiveEntity.shelfLifeRuleId())
+				.addValue("shelfLifeDays", productArchiveEntity.shelfLifeDays())
+				.addValue("warningDays", productArchiveEntity.warningDays())
 				.addValue("qualityGradeId", productArchiveEntity.qualityGradeId())
 				.addValue("status", productArchiveEntity.status())
 				.addValue("sortOrder", productArchiveEntity.sortOrder())

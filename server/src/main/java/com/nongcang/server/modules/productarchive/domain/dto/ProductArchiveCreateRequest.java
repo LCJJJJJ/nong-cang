@@ -20,8 +20,12 @@ public record ProductArchiveCreateRequest(
 		Long originId,
 		@NotNull(message = "储存条件不能为空")
 		Long storageConditionId,
-		@NotNull(message = "保质期规则不能为空")
-		Long shelfLifeRuleId,
+		@NotNull(message = "保质期天数不能为空")
+		@Min(value = 1, message = "保质期天数必须大于0")
+		Integer shelfLifeDays,
+		@NotNull(message = "预警提前天数不能为空")
+		@Min(value = 0, message = "预警提前天数不能小于0")
+		Integer warningDays,
 		@NotNull(message = "品质等级不能为空")
 		Long qualityGradeId,
 		@NotNull(message = "状态不能为空")

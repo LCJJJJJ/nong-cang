@@ -2,7 +2,7 @@
 
 ## 页面目标
 
-产品档案管理页用于维护农产品主数据档案，关联产品分类、单位、产地、储存条件、保质期规则和品质等级，为后续入库、出库、库存和质检业务提供统一商品主数据。
+产品档案管理页用于维护农产品主数据档案，关联产品分类、单位、产地、储存条件和品质等级，并在档案中直接维护保质期与预警天数，为后续入库、出库、库存和质检业务提供统一商品主数据。
 
 ## 数据模型
 
@@ -18,7 +18,8 @@
 - `unit_id`：产品单位ID
 - `origin_id`：产地信息ID
 - `storage_condition_id`：储存条件ID
-- `shelf_life_rule_id`：保质期规则ID
+- `shelf_life_days`：保质期天数
+- `warning_days`：预警提前天数
 - `quality_grade_id`：品质等级ID
 - `sort_order`：排序值
 - `status`：`1` 启用，`0` 停用
@@ -29,8 +30,8 @@
 
 - 产品编号由系统自动生成
 - 产品名称全局唯一
-- 保质期规则如果绑定了适用分类，则必须与产品分类一致
-- 保质期规则如果绑定了储存条件，则必须与产品储存条件一致
+- 保质期天数必须大于 `0`
+- 预警提前天数不能小于 `0`
 
 ## 接口清单
 
@@ -70,7 +71,6 @@
 - `PRODUCT_ARCHIVE_NOT_FOUND`：产品档案不存在
 - `PRODUCT_ARCHIVE_CODE_DUPLICATED`：产品档案编号已存在
 - `PRODUCT_ARCHIVE_NAME_DUPLICATED`：产品档案名称已存在
-- `PRODUCT_ARCHIVE_RULE_SCOPE_INVALID`：保质期规则与当前产品分类或储存条件不匹配
 
 ## 前端联调建议
 
@@ -80,7 +80,6 @@
   - `/api/product-unit/options`
   - `/api/product-origin/options`
   - `/api/storage-condition/options`
-  - `/api/shelf-life-rule/options`
   - `/api/quality-grade/options`
 - 新增、编辑、停用、删除成功后重新查询列表
 - 表单字段错误优先回显 `errors`

@@ -40,7 +40,9 @@ class ProductArchiveControllerTests {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data", Matchers.hasSize(1)))
 				.andExpect(jsonPath("$.data[0].productCode").value("PROD-202604190001"))
-				.andExpect(jsonPath("$.data[0].productName").value("菠菜鲜菜"));
+				.andExpect(jsonPath("$.data[0].productName").value("菠菜鲜菜"))
+				.andExpect(jsonPath("$.data[0].shelfLifeDays").value(5))
+				.andExpect(jsonPath("$.data[0].warningDays").value(1));
 	}
 
 	@Test
@@ -56,7 +58,8 @@ class ProductArchiveControllerTests {
 							  "unitId": 1,
 							  "originId": 1,
 							  "storageConditionId": 1,
-							  "shelfLifeRuleId": 1,
+							  "shelfLifeDays": 6,
+							  "warningDays": 2,
 							  "qualityGradeId": 1,
 							  "status": 1,
 							  "sortOrder": 60,
@@ -67,7 +70,9 @@ class ProductArchiveControllerTests {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("新增成功"))
 				.andExpect(jsonPath("$.data.productCode").value(Matchers.startsWith("PROD-")))
-				.andExpect(jsonPath("$.data.productName").value("测试产品档案"));
+				.andExpect(jsonPath("$.data.productName").value("测试产品档案"))
+				.andExpect(jsonPath("$.data.shelfLifeDays").value(6))
+				.andExpect(jsonPath("$.data.warningDays").value(2));
 	}
 
 	@Test
@@ -98,7 +103,8 @@ class ProductArchiveControllerTests {
 							  "unitId": 1,
 							  "originId": 1,
 							  "storageConditionId": 1,
-							  "shelfLifeRuleId": 1,
+							  "shelfLifeDays": 4,
+							  "warningDays": 1,
 							  "qualityGradeId": 1,
 							  "status": 1,
 							  "sortOrder": 90,

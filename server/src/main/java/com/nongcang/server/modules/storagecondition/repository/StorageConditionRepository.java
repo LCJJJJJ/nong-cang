@@ -177,15 +177,6 @@ public class StorageConditionRepository {
 		return count == null ? 0L : count;
 	}
 
-	public long countShelfLifeRuleReferences(Long id) {
-		Long count = namedParameterJdbcTemplate.queryForObject("""
-				SELECT COUNT(1)
-				FROM shelf_life_rule
-				WHERE storage_condition_id = :id
-				""", new MapSqlParameterSource("id", id), Long.class);
-		return count == null ? 0L : count;
-	}
-
 	public long countProductArchiveReferences(Long id) {
 		Long count = namedParameterJdbcTemplate.queryForObject("""
 				SELECT COUNT(1)
