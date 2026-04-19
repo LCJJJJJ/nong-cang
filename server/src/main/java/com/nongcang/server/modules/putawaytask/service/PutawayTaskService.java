@@ -11,6 +11,7 @@ import com.nongcang.server.common.exception.CommonErrorCode;
 import com.nongcang.server.modules.inboundorder.domain.entity.InboundOrderEntity;
 import com.nongcang.server.modules.inboundorder.domain.entity.InboundOrderItemEntity;
 import com.nongcang.server.modules.inboundorder.repository.InboundOrderRepository;
+import com.nongcang.server.modules.inboundrecord.service.InboundRecordService;
 import com.nongcang.server.modules.inventorysupport.service.InventoryStockService;
 import com.nongcang.server.modules.putawaytask.domain.dto.PutawayAssignRequest;
 import com.nongcang.server.modules.putawaytask.domain.dto.PutawayTaskListQueryRequest;
@@ -44,18 +45,21 @@ public class PutawayTaskService {
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final InventoryStockService inventoryStockService;
+	private final InboundRecordService inboundRecordService;
 
 	public PutawayTaskService(
 			PutawayTaskRepository putawayTaskRepository,
 			InboundOrderRepository inboundOrderRepository,
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
-			InventoryStockService inventoryStockService) {
+			InventoryStockService inventoryStockService,
+			InboundRecordService inboundRecordService) {
 		this.putawayTaskRepository = putawayTaskRepository;
 		this.inboundOrderRepository = inboundOrderRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.inventoryStockService = inventoryStockService;
+		this.inboundRecordService = inboundRecordService;
 	}
 
 	public List<PutawayTaskListItemResponse> getPutawayTaskList(PutawayTaskListQueryRequest queryRequest) {
@@ -136,7 +140,9 @@ public class PutawayTaskService {
 		}
 
 		putawayTaskRepository.updateStatus(id, STATUS_COMPLETED, LocalDateTime.now());
-		inventoryStockService.recordInbound(getExistingTask(id));
+		PutawayTaskEntity updatedTask = getExistingTask(id);
+		inventoryStockService.recordInbound(updatedTask);
+		inboundRecordService.createRecord(updatedTask);
 
 		if (putawayTaskRepository.countOpenTasksByOrderId(task.inboundOrderId()) == 0) {
 			InboundOrderEntity order = inboundOrderRepository.findById(task.inboundOrderId())
