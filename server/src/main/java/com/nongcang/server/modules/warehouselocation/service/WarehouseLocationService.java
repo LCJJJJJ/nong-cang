@@ -60,6 +60,8 @@ public class WarehouseLocationService {
 				.filter(entity -> ENABLED == entity.status())
 				.map(entity -> new WarehouseLocationOptionResponse(
 						entity.id(),
+						entity.warehouseId(),
+						entity.zoneId(),
 						entity.locationName(),
 						entity.zoneName(),
 						entity.status()))

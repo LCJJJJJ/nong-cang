@@ -168,7 +168,7 @@ public class WarehouseRepository {
 		return count == null ? 0L : count;
 	}
 
-	private boolean existsTable(String tableName) {
+	public boolean existsTable(String tableName) {
 		Integer count = namedParameterJdbcTemplate.queryForObject("""
 				SELECT COUNT(1)
 				FROM information_schema.TABLES

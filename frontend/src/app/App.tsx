@@ -12,6 +12,7 @@ import InboundOrderPage from '../pages/inbound-order/InboundOrderPage'
 import ProductArchivePage from '../pages/product-archive/ProductArchivePage'
 import ProductOriginPage from '../pages/product-origin/ProductOriginPage'
 import ProductUnitPage from '../pages/product-unit/ProductUnitPage'
+import PutawayTaskPage from '../pages/putaway-task/PutawayTaskPage'
 import QualityGradePage from '../pages/quality-grade/QualityGradePage'
 import StorageConditionPage from '../pages/storage-condition/StorageConditionPage'
 import SupplierPage from '../pages/supplier/SupplierPage'
@@ -39,6 +40,7 @@ function App() {
             <Route path="/quality-grades" element={<QualityGradePage />} />
             <Route path="/customers" element={<CustomerPage />} />
             <Route path="/inbound-orders" element={<InboundOrderPage />} />
+            <Route path="/putaway-tasks" element={<PutawayTaskPage />} />
             <Route path="/storage-conditions" element={<StorageConditionPage />} />
             <Route path="/suppliers" element={<SupplierPage />} />
             <Route path="/warehouses" element={<WarehousePage />} />

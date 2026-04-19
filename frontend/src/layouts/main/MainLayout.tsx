@@ -72,7 +72,7 @@ const navigationSections: NavigationSection[] = [
     expanded: true,
     children: [
       { label: '入库单管理', path: '/inbound-orders' },
-      { label: '上架任务管理' },
+      { label: '上架任务管理', path: '/putaway-tasks' },
       { label: '入库记录查询' },
     ],
   },
@@ -158,6 +158,11 @@ const pageMetaMap: Record<string, { title: string; description: string }> = {
     title: '入库单管理',
     description:
       '维护到货前的入库业务单据，关联供应商、仓库和产品明细，为后续上架任务生成提供业务入口。',
+  },
+  '/putaway-tasks': {
+    title: '上架任务管理',
+    description:
+      '承接已到货的入库单明细，分配库区库位并完成上架，是库存形成的直接入口。',
   },
 }
 

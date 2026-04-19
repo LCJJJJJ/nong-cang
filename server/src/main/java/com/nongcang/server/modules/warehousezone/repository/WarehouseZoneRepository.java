@@ -76,6 +76,19 @@ public class WarehouseZoneRepository {
 		return warehouseZones.stream().findFirst();
 	}
 
+	public long countLocationReferences(Long id) {
+		if (!existsTable("warehouse_location")) {
+			return 0L;
+		}
+
+		Long count = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM warehouse_location
+				WHERE zone_id = :id
+				""", new MapSqlParameterSource("id", id), Long.class);
+		return count == null ? 0L : count;
+	}
+
 	public boolean existsByZoneCode(String zoneCode, Long excludeId) {
 		String sql = """
 				SELECT COUNT(1)
@@ -173,19 +186,6 @@ public class WarehouseZoneRepository {
 				DELETE FROM warehouse_zone
 				WHERE id = :id
 				""", new MapSqlParameterSource("id", id));
-	}
-
-	public long countLocationReferences(Long id) {
-		if (!existsTable("warehouse_location")) {
-			return 0L;
-		}
-
-		Long count = namedParameterJdbcTemplate.queryForObject("""
-				SELECT COUNT(1)
-				FROM warehouse_location
-				WHERE zone_id = :id
-				""", new MapSqlParameterSource("id", id), Long.class);
-		return count == null ? 0L : count;
 	}
 
 	private boolean existsTable(String tableName) {

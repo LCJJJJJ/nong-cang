@@ -1,0 +1,270 @@
+.putaway-task-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.putaway-task-page__message {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  font-size: 14px;
+}
+
+.putaway-task-page__message--error {
+  color: #ba1a1a;
+  background: rgba(186, 26, 26, 0.08);
+}
+
+.putaway-task-page__search {
+  padding: 24px;
+  background: #ffffff;
+}
+
+.putaway-task-page__search-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.putaway-task-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #3d4a3f;
+    text-transform: uppercase;
+  }
+
+  input,
+  select {
+    width: 100%;
+    height: 44px;
+    padding: 12px 14px;
+    border: 0;
+    background: #f2f4f5;
+    color: #191c1d;
+  }
+}
+
+.putaway-task-page__actions {
+  display: flex;
+  gap: 12px;
+
+  button {
+    flex: 1 1 0;
+    height: 44px;
+    border: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .is-ghost {
+    background: #e6e8e9;
+    color: #191c1d;
+  }
+
+  .is-dark {
+    background: #191c1d;
+    color: #f8fafb;
+  }
+}
+
+.putaway-task-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.putaway-task-page__toolbar-copy h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #191c1d;
+}
+
+.putaway-task-page__toolbar-copy p {
+  margin: 8px 0 0;
+  color: #3d4a3f;
+  font-size: 14px;
+}
+
+.putaway-task-page__table-shell {
+  background: #ffffff;
+}
+
+.putaway-task-page__loading {
+  padding: 40px 24px;
+  color: #3d4a3f;
+}
+
+.putaway-task-page__name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  strong {
+    font-size: 14px;
+    color: #191c1d;
+  }
+
+  span {
+    font-size: 12px;
+    color: #3d4a3f;
+  }
+}
+
+.putaway-task-page__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #e1e3e4;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: #006d37;
+  }
+
+  &.is-complete::before {
+    background: #27ae60;
+  }
+
+  &.is-cancelled::before {
+    background: #989898;
+  }
+}
+
+.putaway-task-page__row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #3d4a3f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:hover {
+      color: #006d37;
+    }
+  }
+}
+
+.putaway-task-page__dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(22, 32, 24, 0.22);
+}
+
+.putaway-task-page__dialog {
+  width: min(100%, 720px);
+  max-height: min(90vh, 800px);
+  overflow: auto;
+  background: #ffffff;
+  box-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.08),
+    0 0 30px rgba(0, 0, 0, 0.04);
+}
+
+.putaway-task-page__dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 0;
+
+  h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #191c1d;
+  }
+
+  p {
+    margin-top: 8px;
+    color: #3d4a3f;
+    font-size: 14px;
+  }
+}
+
+.putaway-task-page__dialog-close {
+  border: 0;
+  background: transparent;
+  color: #3d4a3f;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.putaway-task-page__dialog-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.putaway-task-page__dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  grid-column: 1 / -1;
+
+  button {
+    min-width: 120px;
+    height: 44px;
+    border: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .is-ghost {
+    background: #e6e8e9;
+    color: #191c1d;
+  }
+
+  .is-dark {
+    background: #191c1d;
+    color: #f8fafb;
+  }
+}

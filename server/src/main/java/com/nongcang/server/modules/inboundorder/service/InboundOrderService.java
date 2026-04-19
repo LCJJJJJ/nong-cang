@@ -19,6 +19,7 @@ import com.nongcang.server.modules.inboundorder.domain.vo.InboundOrderDetailResp
 import com.nongcang.server.modules.inboundorder.domain.vo.InboundOrderItemResponse;
 import com.nongcang.server.modules.inboundorder.domain.vo.InboundOrderListItemResponse;
 import com.nongcang.server.modules.inboundorder.repository.InboundOrderRepository;
+import com.nongcang.server.modules.putawaytask.service.PutawayTaskService;
 import com.nongcang.server.modules.productarchive.repository.ProductArchiveRepository;
 import com.nongcang.server.modules.supplier.repository.SupplierRepository;
 import com.nongcang.server.modules.warehouse.repository.WarehouseRepository;
@@ -41,16 +42,19 @@ public class InboundOrderService {
 	private final SupplierRepository supplierRepository;
 	private final WarehouseRepository warehouseRepository;
 	private final ProductArchiveRepository productArchiveRepository;
+	private final PutawayTaskService putawayTaskService;
 
 	public InboundOrderService(
 			InboundOrderRepository inboundOrderRepository,
 			SupplierRepository supplierRepository,
 			WarehouseRepository warehouseRepository,
-			ProductArchiveRepository productArchiveRepository) {
+			ProductArchiveRepository productArchiveRepository,
+			PutawayTaskService putawayTaskService) {
 		this.inboundOrderRepository = inboundOrderRepository;
 		this.supplierRepository = supplierRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.productArchiveRepository = productArchiveRepository;
+		this.putawayTaskService = putawayTaskService;
 	}
 
 	public List<InboundOrderListItemResponse> getInboundOrderList(InboundOrderListQueryRequest queryRequest) {
@@ -133,6 +137,9 @@ public class InboundOrderService {
 		InboundOrderEntity currentOrder = getExistingInboundOrder(id);
 		ensurePendingArrival(currentOrder.status(), "当前入库单状态不允许到货确认");
 		inboundOrderRepository.updateStatus(id, STATUS_WAIT_PUTAWAY, LocalDateTime.now());
+		InboundOrderEntity updatedOrder = getExistingInboundOrder(id);
+		List<InboundOrderItemEntity> items = inboundOrderRepository.findItemsByOrderId(id);
+		putawayTaskService.createTasksForInboundOrder(updatedOrder, items);
 	}
 
 	@Transactional
