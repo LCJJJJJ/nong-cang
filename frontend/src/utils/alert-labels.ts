@@ -27,6 +27,10 @@ export function getAlertTypeLabel(alertType: string) {
       return '待盘点确认超时'
     case 'INBOUND_PENDING_INSPECTION':
       return '待质检超时'
+    case 'NEAR_EXPIRY':
+      return '临期预警'
+    case 'EXPIRED':
+      return '过期预警'
     default:
       return alertType
   }
@@ -38,6 +42,8 @@ export function getAlertThresholdUnitLabel(thresholdUnit: string) {
       return '件'
     case 'HOUR':
       return '小时'
+    case 'DAY':
+      return '天'
     default:
       return thresholdUnit
   }
@@ -57,6 +63,8 @@ export function getAlertSourceTypeLabel(sourceType: string) {
       return '盘点单'
     case 'INBOUND_RECORD':
       return '入库记录'
+    case 'INVENTORY_BATCH':
+      return '库存批次'
     default:
       return sourceType
   }

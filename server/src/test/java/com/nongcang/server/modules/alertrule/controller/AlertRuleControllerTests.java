@@ -36,7 +36,9 @@ class AlertRuleControllerTests {
 					.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data", Matchers.hasSize(Matchers.greaterThanOrEqualTo(1))))
-				.andExpect(jsonPath("$.data[0].ruleCode").isNotEmpty());
+				.andExpect(jsonPath("$.data[0].ruleCode").isNotEmpty())
+				.andExpect(jsonPath("$.data[?(@.ruleCode=='AR-NEAR-EXPIRY')]").isNotEmpty())
+				.andExpect(jsonPath("$.data[?(@.ruleCode=='AR-EXPIRED')]").isNotEmpty());
 	}
 
 	@Test

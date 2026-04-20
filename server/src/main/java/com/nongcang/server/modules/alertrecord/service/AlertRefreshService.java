@@ -19,6 +19,7 @@ import com.nongcang.server.modules.alertrecord.domain.entity.AlertRecordEntity;
 import com.nongcang.server.modules.alertrecord.domain.vo.AlertRefreshResponse;
 import com.nongcang.server.modules.alertrecord.repository.AlertRecordRepository;
 import com.nongcang.server.modules.inboundrecord.repository.InboundRecordRepository;
+import com.nongcang.server.modules.inventorysupport.repository.InventoryBatchRepository;
 import com.nongcang.server.modules.inventorystock.repository.InventoryStockQueryRepository;
 import com.nongcang.server.modules.inventorystocktaking.repository.InventoryStocktakingRepository;
 import com.nongcang.server.modules.messagenotice.repository.MessageNoticeRepository;
@@ -42,6 +43,7 @@ public class AlertRefreshService {
 	private final AlertRecordRepository alertRecordRepository;
 	private final MessageNoticeRepository messageNoticeRepository;
 	private final InventoryStockQueryRepository inventoryStockQueryRepository;
+	private final InventoryBatchRepository inventoryBatchRepository;
 	private final PutawayTaskRepository putawayTaskRepository;
 	private final OutboundTaskRepository outboundTaskRepository;
 	private final AbnormalStockRepository abnormalStockRepository;
@@ -54,6 +56,7 @@ public class AlertRefreshService {
 			AlertRecordRepository alertRecordRepository,
 			MessageNoticeRepository messageNoticeRepository,
 			InventoryStockQueryRepository inventoryStockQueryRepository,
+			InventoryBatchRepository inventoryBatchRepository,
 			PutawayTaskRepository putawayTaskRepository,
 			OutboundTaskRepository outboundTaskRepository,
 			AbnormalStockRepository abnormalStockRepository,
@@ -64,6 +67,7 @@ public class AlertRefreshService {
 		this.alertRecordRepository = alertRecordRepository;
 		this.messageNoticeRepository = messageNoticeRepository;
 		this.inventoryStockQueryRepository = inventoryStockQueryRepository;
+		this.inventoryBatchRepository = inventoryBatchRepository;
 		this.putawayTaskRepository = putawayTaskRepository;
 		this.outboundTaskRepository = outboundTaskRepository;
 		this.abnormalStockRepository = abnormalStockRepository;
@@ -219,6 +223,36 @@ public class AlertRefreshService {
 							record.occurredAt(),
 							record.recordCode() + " 待质检超时",
 							"入库记录 " + record.recordCode() + " 已超过 " + rule.thresholdValue() + " 小时未完成质检"))
+					.toList();
+			case "NEAR_EXPIRY" -> inventoryBatchRepository.findActiveForAlerting().stream()
+					.filter(batch -> batch.warningAt() != null)
+					.filter(batch -> batch.expectedExpireAt() != null)
+					.filter(batch -> !batch.expectedExpireAt().isBefore(LocalDateTime.now()))
+					.filter(batch -> !batch.warningAt().isAfter(LocalDateTime.now()))
+					.map(batch -> new AlertCandidate(
+							"INVENTORY_BATCH",
+							batch.id(),
+							batch.batchCode(),
+							batch.warningAt(),
+							batch.productName() + " 临期预警",
+							batch.productName() + " 批次 " + batch.batchCode() + " 位于 "
+									+ batch.warehouseName() + "/" + batch.locationName()
+									+ "，剩余 " + batch.remainingQuantity() + "，将于 "
+									+ batch.expectedExpireAt().atOffset(ZoneOffset.ofHours(8)) + " 到期"))
+					.toList();
+			case "EXPIRED" -> inventoryBatchRepository.findActiveForAlerting().stream()
+					.filter(batch -> batch.expectedExpireAt() != null)
+					.filter(batch -> !batch.expectedExpireAt().isAfter(LocalDateTime.now()))
+					.map(batch -> new AlertCandidate(
+							"INVENTORY_BATCH",
+							batch.id(),
+							batch.batchCode(),
+							batch.expectedExpireAt(),
+							batch.productName() + " 过期预警",
+							batch.productName() + " 批次 " + batch.batchCode() + " 位于 "
+									+ batch.warehouseName() + "/" + batch.locationName()
+									+ "，剩余 " + batch.remainingQuantity() + "，已于 "
+									+ batch.expectedExpireAt().atOffset(ZoneOffset.ofHours(8)) + " 过期"))
 					.toList();
 			default -> List.of();
 		};

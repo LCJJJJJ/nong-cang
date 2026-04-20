@@ -218,6 +218,8 @@ function AlertCenterPage() {
               <option value="ABNORMAL_STOCK_STAGNANT">{getAlertTypeLabel('ABNORMAL_STOCK_STAGNANT')}</option>
               <option value="STOCKTAKING_CONFIRM_TIMEOUT">{getAlertTypeLabel('STOCKTAKING_CONFIRM_TIMEOUT')}</option>
               <option value="INBOUND_PENDING_INSPECTION">{getAlertTypeLabel('INBOUND_PENDING_INSPECTION')}</option>
+              <option value="NEAR_EXPIRY">{getAlertTypeLabel('NEAR_EXPIRY')}</option>
+              <option value="EXPIRED">{getAlertTypeLabel('EXPIRED')}</option>
             </select>
           </label>
           <label className="alert-center-page__field">

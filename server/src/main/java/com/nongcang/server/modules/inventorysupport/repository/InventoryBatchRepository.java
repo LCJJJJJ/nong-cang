@@ -1,13 +1,14 @@
 package com.nongcang.server.modules.inventorysupport.repository;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryBatchAlertEntity;
 import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryBatchEntity;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -40,6 +41,29 @@ public class InventoryBatchRepository {
 					rs.getString("status"),
 					toLocalDateTime(rs.getTimestamp("created_at")),
 					toLocalDateTime(rs.getTimestamp("updated_at")));
+		}
+	};
+
+	private static final RowMapper<InventoryBatchAlertEntity> INVENTORY_BATCH_ALERT_ROW_MAPPER = new RowMapper<>() {
+		@Override
+		public InventoryBatchAlertEntity mapRow(ResultSet rs, int rowNum) throws SQLException {
+			return new InventoryBatchAlertEntity(
+					rs.getLong("id"),
+					rs.getString("batch_code"),
+					rs.getString("source_type"),
+					rs.getLong("source_id"),
+					rs.getLong("product_id"),
+					rs.getString("product_code"),
+					rs.getString("product_name"),
+					rs.getLong("warehouse_id"),
+					rs.getString("warehouse_name"),
+					rs.getLong("zone_id"),
+					rs.getString("zone_name"),
+					rs.getLong("location_id"),
+					rs.getString("location_name"),
+					toLocalDateTime(rs.getTimestamp("warning_at")),
+					toLocalDateTime(rs.getTimestamp("expected_expire_at")),
+					rs.getBigDecimal("remaining_quantity"));
 		}
 	};
 
@@ -135,6 +159,36 @@ public class InventoryBatchRepository {
 				.addValue("sourceType", sourceType)
 				.addValue("sourceId", sourceId), INVENTORY_BATCH_ROW_MAPPER);
 		return batches.stream().findFirst();
+	}
+
+	public List<InventoryBatchAlertEntity> findActiveForAlerting() {
+		return namedParameterJdbcTemplate.query("""
+				SELECT
+				  ib.id,
+				  ib.batch_code,
+				  ib.source_type,
+				  ib.source_id,
+				  ib.product_id,
+				  pa.product_code,
+				  pa.product_name,
+				  ib.warehouse_id,
+				  w.warehouse_name,
+				  ib.zone_id,
+				  wz.zone_name,
+				  ib.location_id,
+				  wl.location_name,
+				  ib.warning_at,
+				  ib.expected_expire_at,
+				  ib.remaining_quantity
+				FROM inventory_batch ib
+				JOIN product_archive pa ON pa.id = ib.product_id
+				JOIN warehouse w ON w.id = ib.warehouse_id
+				JOIN warehouse_zone wz ON wz.id = ib.zone_id
+				JOIN warehouse_location wl ON wl.id = ib.location_id
+				WHERE ib.status = 'ACTIVE'
+				  AND ib.remaining_quantity > 0
+				ORDER BY ib.expected_expire_at ASC, ib.id ASC
+				""", INVENTORY_BATCH_ALERT_ROW_MAPPER);
 	}
 
 	public void updateShelfLifeSnapshot(

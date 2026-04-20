@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,9 @@ class AlertRecordControllerTests {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	@Test
 	void shouldRefreshAndListAlertRecords() throws Exception {
@@ -64,6 +69,38 @@ class AlertRecordControllerTests {
 					.header("Authorization", bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.message").value("已忽略"));
+	}
+
+	@Test
+	void shouldGenerateNearExpiryAndExpiredAlertsFromInventoryBatch() throws Exception {
+		namedParameterJdbcTemplate.update("""
+				UPDATE inventory_batch
+				SET warning_at = DATE_SUB(NOW(), INTERVAL 1 HOUR),
+				    expected_expire_at = DATE_ADD(NOW(), INTERVAL 1 DAY)
+				WHERE id = 3
+				""", new MapSqlParameterSource());
+		namedParameterJdbcTemplate.update("""
+				UPDATE inventory_batch
+				SET warning_at = DATE_SUB(NOW(), INTERVAL 3 DAY),
+				    expected_expire_at = DATE_SUB(NOW(), INTERVAL 1 HOUR)
+				WHERE id = 2
+				""", new MapSqlParameterSource());
+
+		mockMvc.perform(post("/api/alert-record/refresh")
+					.header("Authorization", bearerToken()))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/api/alert-record/list")
+					.header("Authorization", bearerToken())
+					.param("alertType", "NEAR_EXPIRY"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data[?(@.alertType=='NEAR_EXPIRY')]").isNotEmpty());
+
+		mockMvc.perform(get("/api/alert-record/list")
+					.header("Authorization", bearerToken())
+					.param("alertType", "EXPIRED"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data[?(@.alertType=='EXPIRED')]").isNotEmpty());
 	}
 
 	private String bearerToken() throws Exception {
