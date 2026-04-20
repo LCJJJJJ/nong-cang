@@ -13,7 +13,7 @@
 
  Date: 20/04/2026 19:53:48
 */
-
+USE `nong-cang`;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
