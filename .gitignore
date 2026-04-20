@@ -1,0 +1,15 @@
+.DS_Store
+
+.idea/
+.vscode/
+*.sw?
+
+.worktrees/
+
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+server/target/
+
+*.log
