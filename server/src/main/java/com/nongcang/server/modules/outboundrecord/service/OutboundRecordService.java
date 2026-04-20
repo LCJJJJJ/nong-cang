@@ -6,6 +6,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.outboundrecord.domain.dto.OutboundRecordListQueryRequest;
 import com.nongcang.server.modules.outboundrecord.domain.entity.OutboundRecordEntity;
 import com.nongcang.server.modules.outboundrecord.domain.vo.OutboundRecordListItemResponse;
@@ -22,14 +23,20 @@ public class OutboundRecordService {
 			DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
 	private final OutboundRecordRepository outboundRecordRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
-	public OutboundRecordService(OutboundRecordRepository outboundRecordRepository) {
+	public OutboundRecordService(
+			OutboundRecordRepository outboundRecordRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.outboundRecordRepository = outboundRecordRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<OutboundRecordListItemResponse> getOutboundRecordList(OutboundRecordListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return outboundRecordRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || entity.warehouseId().equals(scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();

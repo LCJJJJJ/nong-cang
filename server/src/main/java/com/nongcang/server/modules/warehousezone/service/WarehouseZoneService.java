@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.warehouse.repository.WarehouseRepository;
 import com.nongcang.server.modules.warehousezone.domain.dto.WarehouseZoneCreateRequest;
 import com.nongcang.server.modules.warehousezone.domain.dto.WarehouseZoneListQueryRequest;
@@ -33,25 +34,32 @@ public class WarehouseZoneService {
 
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseRepository warehouseRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public WarehouseZoneService(
 			WarehouseZoneRepository warehouseZoneRepository,
-			WarehouseRepository warehouseRepository) {
+			WarehouseRepository warehouseRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseRepository = warehouseRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<WarehouseZoneListItemResponse> getWarehouseZoneList(WarehouseZoneListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return warehouseZoneRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public List<WarehouseZoneOptionResponse> getWarehouseZoneOptions() {
+		Long scopedWarehouseId = warehouseAccessScopeService.currentWarehouseIdOrNull();
 		return warehouseZoneRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> ENABLED == entity.status())
 				.map(entity -> new WarehouseZoneOptionResponse(
 						entity.id(),
@@ -63,19 +71,21 @@ public class WarehouseZoneService {
 	}
 
 	public WarehouseZoneDetailResponse getWarehouseZoneDetail(Long id) {
-		return toDetailResponse(getExistingWarehouseZone(id));
+		WarehouseZoneEntity warehouseZone = getExistingWarehouseZone(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseZone.warehouseId());
+		return toDetailResponse(warehouseZone);
 	}
 
 	@Transactional
 	public WarehouseZoneDetailResponse createWarehouseZone(WarehouseZoneCreateRequest request) {
-		resolveWarehouseId(request.warehouseId());
-		validateUniqueName(request.warehouseId(), request.zoneName(), null);
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
+		validateUniqueName(warehouseId, request.zoneName(), null);
 		validateTemperatureRange(request.temperatureMin(), request.temperatureMax());
 
 		WarehouseZoneEntity warehouseZoneEntity = new WarehouseZoneEntity(
 				null,
 				generateWarehouseZoneCode(),
-				request.warehouseId(),
+				warehouseId,
 				null,
 				request.zoneName().trim(),
 				request.zoneType().trim(),
@@ -94,15 +104,16 @@ public class WarehouseZoneService {
 	@Transactional
 	public WarehouseZoneDetailResponse updateWarehouseZone(Long id, WarehouseZoneUpdateRequest request) {
 		WarehouseZoneEntity currentWarehouseZone = getExistingWarehouseZone(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentWarehouseZone.warehouseId());
 
-		resolveWarehouseId(request.warehouseId());
-		validateUniqueName(request.warehouseId(), request.zoneName(), id);
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
+		validateUniqueName(warehouseId, request.zoneName(), id);
 		validateTemperatureRange(request.temperatureMin(), request.temperatureMax());
 
 		WarehouseZoneEntity updatedWarehouseZone = new WarehouseZoneEntity(
 				currentWarehouseZone.id(),
 				currentWarehouseZone.zoneCode(),
-				request.warehouseId(),
+				warehouseId,
 				null,
 				request.zoneName().trim(),
 				request.zoneType().trim(),
@@ -120,13 +131,15 @@ public class WarehouseZoneService {
 
 	@Transactional
 	public void updateWarehouseZoneStatus(Long id, WarehouseZoneStatusUpdateRequest request) {
-		getExistingWarehouseZone(id);
+		WarehouseZoneEntity warehouseZone = getExistingWarehouseZone(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseZone.warehouseId());
 		warehouseZoneRepository.updateStatus(id, request.status());
 	}
 
 	@Transactional
 	public void deleteWarehouseZone(Long id) {
-		getExistingWarehouseZone(id);
+		WarehouseZoneEntity warehouseZone = getExistingWarehouseZone(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseZone.warehouseId());
 
 		if (warehouseZoneRepository.countLocationReferences(id) > 0) {
 			throw new BusinessException(CommonErrorCode.WAREHOUSE_ZONE_HAS_LOCATIONS);

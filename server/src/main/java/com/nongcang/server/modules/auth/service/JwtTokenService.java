@@ -108,13 +108,17 @@ public class JwtTokenService {
 
 			List<String> roles = claims.get(ROLES_CLAIM, List.class);
 			String userId = claims.get(USER_ID_CLAIM, String.class);
+			String roleCode = claims.get(ROLE_CODE_CLAIM, String.class);
+			if ((roleCode == null || roleCode.isBlank()) && roles != null && !roles.isEmpty()) {
+				roleCode = String.valueOf(roles.get(0));
+			}
 
 			return new AuthenticatedUser(
 					Long.valueOf(userId),
 					claims.getSubject(),
 					claims.get(DISPLAY_NAME_CLAIM, String.class),
 					claims.get(PHONE_CLAIM, String.class),
-					claims.get(ROLE_CODE_CLAIM, String.class),
+					roleCode,
 					parseWarehouseId(claims.get(WAREHOUSE_ID_CLAIM, String.class)),
 					claims.get(WAREHOUSE_NAME_CLAIM, String.class),
 					roles == null ? List.of() : roles.stream().map(String::valueOf).toList());

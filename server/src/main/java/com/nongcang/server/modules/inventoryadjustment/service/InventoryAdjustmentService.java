@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.inventoryadjustment.domain.dto.InventoryAdjustmentCreateRequest;
 import com.nongcang.server.modules.inventoryadjustment.domain.dto.InventoryAdjustmentListQueryRequest;
@@ -47,6 +48,7 @@ public class InventoryAdjustmentService {
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final ProductArchiveRepository productArchiveRepository;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public InventoryAdjustmentService(
 			InventoryAdjustmentRepository inventoryAdjustmentRepository,
@@ -56,7 +58,8 @@ public class InventoryAdjustmentService {
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
 			ProductArchiveRepository productArchiveRepository,
-			QuantityPrecisionValidator quantityPrecisionValidator) {
+			QuantityPrecisionValidator quantityPrecisionValidator,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inventoryAdjustmentRepository = inventoryAdjustmentRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
 		this.inventoryTransactionRepository = inventoryTransactionRepository;
@@ -65,19 +68,24 @@ public class InventoryAdjustmentService {
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.productArchiveRepository = productArchiveRepository;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InventoryAdjustmentListItemResponse> getInventoryAdjustmentList(
 			InventoryAdjustmentListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inventoryAdjustmentRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public InventoryAdjustmentDetailResponse getInventoryAdjustmentDetail(Long id) {
-		return toDetailResponse(getExistingAdjustment(id));
+		InventoryAdjustmentEntity adjustment = getExistingAdjustment(id);
+		warehouseAccessScopeService.assertWarehouseAccess(adjustment.warehouseId());
+		return toDetailResponse(adjustment);
 	}
 
 	@Transactional
@@ -85,10 +93,10 @@ public class InventoryAdjustmentService {
 		String adjustmentType = normalizeAdjustmentType(request.adjustmentType());
 		BigDecimal quantity = validateQuantity(request.quantity());
 
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		WarehouseZoneEntity zone = resolveZone(request.zoneId());
 		WarehouseLocationEntity location = resolveLocation(request.locationId());
-		validateWarehouseLocationRelation(request.warehouseId(), zone, location);
+		validateWarehouseLocationRelation(warehouseId, zone, location);
 		var productArchive = productArchiveRepository.findById(request.productId())
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.PRODUCT_ARCHIVE_NOT_FOUND));
 		quantityPrecisionValidator.validate(
@@ -99,12 +107,12 @@ public class InventoryAdjustmentService {
 		if (TYPE_DECREASE.equals(adjustmentType)) {
 			validateDecreaseAvailable(
 					request.productId(),
-					request.warehouseId(),
+					warehouseId,
 					request.locationId(),
 					quantity);
 			boolean decreased = inventoryStockRepository.decreaseStock(
 					request.productId(),
-					request.warehouseId(),
+					warehouseId,
 					request.zoneId(),
 					request.locationId(),
 					quantity);
@@ -115,7 +123,7 @@ public class InventoryAdjustmentService {
 		} else {
 			inventoryStockRepository.increaseStock(
 					request.productId(),
-					request.warehouseId(),
+					warehouseId,
 					request.zoneId(),
 					request.locationId(),
 					quantity);
@@ -123,7 +131,7 @@ public class InventoryAdjustmentService {
 
 		long adjustmentId = inventoryAdjustmentRepository.insert(
 				generateAdjustmentCode(),
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				request.locationId(),
 				request.productId(),
@@ -136,7 +144,7 @@ public class InventoryAdjustmentService {
 				generateTransactionCode(),
 				"ADJUSTMENT",
 				request.productId(),
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				request.locationId(),
 				TYPE_INCREASE.equals(adjustmentType) ? quantity : quantity.negate(),

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { type AppError, normalizeError } from '../../../api/errors'
 import { login } from '../../../features/auth/api'
-import { getFirstAllowedPath } from '../../../features/auth/role-access'
+import { getFirstAllowedPath, resolveRoleCode } from '../../../features/auth/role-access'
 import { useAuthSession } from '../../../features/auth/useAuthSession'
 import { saveAuthSession } from '../../../features/auth/storage'
 import './LoginPage.css'
@@ -41,7 +41,7 @@ function LoginPage() {
 
       saveAuthSession(session)
       setAuthenticated(session.user)
-      navigate(redirectTo ?? getFirstAllowedPath(session.user.roleCode), { replace: true })
+      navigate(redirectTo ?? getFirstAllowedPath(resolveRoleCode(session.user)), { replace: true })
     } catch (error) {
       const appError = normalizeError(error)
       setSubmitError(appError)

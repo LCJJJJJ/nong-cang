@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.abnormalstock.service.AbnormalStockService;
 import com.nongcang.server.modules.inboundrecord.domain.entity.InboundRecordEntity;
@@ -43,6 +44,7 @@ public class QualityInspectionService {
 	private final ProductArchiveRepository productArchiveRepository;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
 	private final AbnormalStockService abnormalStockService;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public QualityInspectionService(
 			QualityInspectionRepository qualityInspectionRepository,
@@ -50,31 +52,38 @@ public class QualityInspectionService {
 			InventoryStockQueryRepository inventoryStockQueryRepository,
 			ProductArchiveRepository productArchiveRepository,
 			QuantityPrecisionValidator quantityPrecisionValidator,
-			AbnormalStockService abnormalStockService) {
+			AbnormalStockService abnormalStockService,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.qualityInspectionRepository = qualityInspectionRepository;
 		this.inboundRecordRepository = inboundRecordRepository;
 		this.inventoryStockQueryRepository = inventoryStockQueryRepository;
 		this.productArchiveRepository = productArchiveRepository;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
 		this.abnormalStockService = abnormalStockService;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<QualityInspectionListItemResponse> getQualityInspectionList(
 			QualityInspectionListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.currentWarehouseIdOrNull();
 		return qualityInspectionRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public QualityInspectionDetailResponse getQualityInspectionDetail(Long id) {
-		return toDetailResponse(getExistingInspection(id));
+		QualityInspectionEntity inspection = getExistingInspection(id);
+		warehouseAccessScopeService.assertWarehouseAccess(inspection.warehouseId());
+		return toDetailResponse(inspection);
 	}
 
 	@Transactional
 	public QualityInspectionDetailResponse createQualityInspection(QualityInspectionCreateRequest request) {
 		InspectionSourceSnapshot sourceSnapshot = resolveSource(normalizeSourceType(request.sourceType()), request.sourceId());
+		warehouseAccessScopeService.assertWarehouseAccess(sourceSnapshot.warehouseId());
 		BigDecimal alreadyInspected = qualityInspectionRepository.sumInspectQuantityBySource(
 				sourceSnapshot.sourceType(),
 				sourceSnapshot.sourceId());

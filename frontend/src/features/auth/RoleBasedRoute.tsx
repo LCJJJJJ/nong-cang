@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
-import { getFirstAllowedPath, isPathAllowed } from './role-access'
+import { getFirstAllowedPath, isPathAllowed, resolveRoleCode } from './role-access'
 import { useAuthSession } from './useAuthSession'
 
 function RoleBasedRoute() {
@@ -11,11 +11,13 @@ function RoleBasedRoute() {
     return <Outlet />
   }
 
-  if (isPathAllowed(user.roleCode, location.pathname)) {
+  const roleCode = resolveRoleCode(user)
+
+  if (isPathAllowed(roleCode, location.pathname)) {
     return <Outlet />
   }
 
-  return <Navigate to={getFirstAllowedPath(user.roleCode)} replace />
+  return <Navigate to={getFirstAllowedPath(roleCode)} replace />
 }
 
 export default RoleBasedRoute

@@ -5,6 +5,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.inventorytransaction.domain.dto.InventoryTransactionListQueryRequest;
 import com.nongcang.server.modules.inventorytransaction.domain.entity.InventoryTransactionEntity;
 import com.nongcang.server.modules.inventorytransaction.domain.vo.InventoryTransactionListItemResponse;
@@ -16,15 +17,21 @@ import org.springframework.util.StringUtils;
 public class InventoryTransactionQueryService {
 
 	private final InventoryTransactionQueryRepository inventoryTransactionQueryRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
-	public InventoryTransactionQueryService(InventoryTransactionQueryRepository inventoryTransactionQueryRepository) {
+	public InventoryTransactionQueryService(
+			InventoryTransactionQueryRepository inventoryTransactionQueryRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inventoryTransactionQueryRepository = inventoryTransactionQueryRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InventoryTransactionListItemResponse> getInventoryTransactionList(
 			InventoryTransactionListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inventoryTransactionQueryRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();

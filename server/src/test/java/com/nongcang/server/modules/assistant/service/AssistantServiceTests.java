@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +35,9 @@ class AssistantServiceTests {
 
 	@Test
 	void shouldUseFinalToolResultBlocksForStreamChat() {
+		Authentication authentication = authentication();
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+
 		when(assistantLlmClient.chat(anyList(), anyList()))
 				.thenReturn(
 						new AssistantLlmResponse(
@@ -73,15 +77,19 @@ class AssistantServiceTests {
 
 		AtomicReference<AssistantChatResponse> responseReference = new AtomicReference<>();
 
-		assistantService.streamChat(
-				new AssistantChatRequest(null, "查一下内酯豆腐的出库记录", "/outbound-records", "出库记录查询"),
-				authentication(),
-				new AssistantStreamListener() {
-					@Override
-					public void onDone(AssistantChatResponse response) {
-						responseReference.set(response);
-					}
-				});
+		try {
+			assistantService.streamChat(
+					new AssistantChatRequest(null, "查一下内酯豆腐的出库记录", "/outbound-records", "出库记录查询"),
+					authentication,
+					new AssistantStreamListener() {
+						@Override
+						public void onDone(AssistantChatResponse response) {
+							responseReference.set(response);
+						}
+					});
+		} finally {
+			SecurityContextHolder.clearContext();
+		}
 
 		AssistantChatResponse response = responseReference.get();
 		assertThat(response).isNotNull();

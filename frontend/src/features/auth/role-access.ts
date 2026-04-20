@@ -1,3 +1,5 @@
+import type { AuthUser } from './types'
+
 const ADMIN_ONLY_PATHS = ['/system-users', '/role-overview']
 
 const ROLE_PATHS: Record<string, string[]> = {
@@ -109,4 +111,12 @@ export function getFirstAllowedPath(roleCode: string | undefined) {
 
 export function isAdminOnlyPath(path: string) {
   return ADMIN_ONLY_PATHS.includes(path)
+}
+
+export function resolveRoleCode(user: AuthUser | null | undefined) {
+  if (user?.roleCode) {
+    return user.roleCode
+  }
+
+  return user?.roles?.[0]
 }

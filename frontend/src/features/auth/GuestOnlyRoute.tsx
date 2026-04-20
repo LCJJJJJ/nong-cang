@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 
-import { getFirstAllowedPath } from './role-access'
+import { getFirstAllowedPath, resolveRoleCode } from './role-access'
 import { useAuthSession } from './useAuthSession'
 
 function GuestOnlyRoute() {
@@ -11,7 +11,7 @@ function GuestOnlyRoute() {
   }
 
   if (status === 'authenticated') {
-    return <Navigate to={getFirstAllowedPath(user?.roleCode)} replace />
+    return <Navigate to={getFirstAllowedPath(resolveRoleCode(user))} replace />
   }
 
   return <Outlet />

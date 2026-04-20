@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.warehouse.repository.WarehouseRepository;
 import com.nongcang.server.modules.warehousezone.domain.entity.WarehouseZoneEntity;
 import com.nongcang.server.modules.warehousezone.repository.WarehouseZoneRepository;
@@ -35,28 +36,35 @@ public class WarehouseLocationService {
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final WarehouseRepository warehouseRepository;
 	private final WarehouseZoneRepository warehouseZoneRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public WarehouseLocationService(
 			WarehouseLocationRepository warehouseLocationRepository,
 			WarehouseRepository warehouseRepository,
-			WarehouseZoneRepository warehouseZoneRepository) {
+			WarehouseZoneRepository warehouseZoneRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<WarehouseLocationListItemResponse> getWarehouseLocationList(
 			WarehouseLocationListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return warehouseLocationRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public List<WarehouseLocationOptionResponse> getWarehouseLocationOptions() {
+		Long scopedWarehouseId = warehouseAccessScopeService.currentWarehouseIdOrNull();
 		return warehouseLocationRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> ENABLED == entity.status())
 				.map(entity -> new WarehouseLocationOptionResponse(
 						entity.id(),
@@ -69,20 +77,22 @@ public class WarehouseLocationService {
 	}
 
 	public WarehouseLocationDetailResponse getWarehouseLocationDetail(Long id) {
-		return toDetailResponse(getExistingWarehouseLocation(id));
+		WarehouseLocationEntity warehouseLocation = getExistingWarehouseLocation(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseLocation.warehouseId());
+		return toDetailResponse(warehouseLocation);
 	}
 
 	@Transactional
 	public WarehouseLocationDetailResponse createWarehouseLocation(WarehouseLocationCreateRequest request) {
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		WarehouseZoneEntity warehouseZone = resolveZoneId(request.zoneId());
-		validateWarehouseZoneRelation(request.warehouseId(), warehouseZone);
+		validateWarehouseZoneRelation(warehouseId, warehouseZone);
 		validateUniqueName(request.zoneId(), request.locationName(), null);
 
 		WarehouseLocationEntity warehouseLocationEntity = new WarehouseLocationEntity(
 				null,
 				generateWarehouseLocationCode(),
-				request.warehouseId(),
+				warehouseId,
 				null,
 				request.zoneId(),
 				null,
@@ -102,16 +112,17 @@ public class WarehouseLocationService {
 	@Transactional
 	public WarehouseLocationDetailResponse updateWarehouseLocation(Long id, WarehouseLocationUpdateRequest request) {
 		WarehouseLocationEntity currentWarehouseLocation = getExistingWarehouseLocation(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentWarehouseLocation.warehouseId());
 
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		WarehouseZoneEntity warehouseZone = resolveZoneId(request.zoneId());
-		validateWarehouseZoneRelation(request.warehouseId(), warehouseZone);
+		validateWarehouseZoneRelation(warehouseId, warehouseZone);
 		validateUniqueName(request.zoneId(), request.locationName(), id);
 
 		WarehouseLocationEntity updatedWarehouseLocation = new WarehouseLocationEntity(
 				currentWarehouseLocation.id(),
 				currentWarehouseLocation.locationCode(),
-				request.warehouseId(),
+				warehouseId,
 				null,
 				request.zoneId(),
 				null,
@@ -130,13 +141,15 @@ public class WarehouseLocationService {
 
 	@Transactional
 	public void updateWarehouseLocationStatus(Long id, WarehouseLocationStatusUpdateRequest request) {
-		getExistingWarehouseLocation(id);
+		WarehouseLocationEntity warehouseLocation = getExistingWarehouseLocation(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseLocation.warehouseId());
 		warehouseLocationRepository.updateStatus(id, request.status());
 	}
 
 	@Transactional
 	public void deleteWarehouseLocation(Long id) {
-		getExistingWarehouseLocation(id);
+		WarehouseLocationEntity warehouseLocation = getExistingWarehouseLocation(id);
+		warehouseAccessScopeService.assertWarehouseAccess(warehouseLocation.warehouseId());
 		warehouseLocationRepository.deleteById(id);
 	}
 

@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.inboundorder.domain.dto.InboundOrderCreateRequest;
 import com.nongcang.server.modules.inboundorder.domain.dto.InboundOrderItemRequest;
@@ -45,6 +46,7 @@ public class InboundOrderService {
 	private final ProductArchiveRepository productArchiveRepository;
 	private final PutawayTaskService putawayTaskService;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public InboundOrderService(
 			InboundOrderRepository inboundOrderRepository,
@@ -52,18 +54,22 @@ public class InboundOrderService {
 			WarehouseRepository warehouseRepository,
 			ProductArchiveRepository productArchiveRepository,
 			PutawayTaskService putawayTaskService,
-			QuantityPrecisionValidator quantityPrecisionValidator) {
+			QuantityPrecisionValidator quantityPrecisionValidator,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inboundOrderRepository = inboundOrderRepository;
 		this.supplierRepository = supplierRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.productArchiveRepository = productArchiveRepository;
 		this.putawayTaskService = putawayTaskService;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InboundOrderListItemResponse> getInboundOrderList(InboundOrderListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inboundOrderRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
@@ -71,6 +77,7 @@ public class InboundOrderService {
 
 	public InboundOrderDetailResponse getInboundOrderDetail(Long id) {
 		InboundOrderEntity inboundOrder = getExistingInboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(inboundOrder.warehouseId());
 		List<InboundOrderItemResponse> items = inboundOrderRepository.findItemsByOrderId(id)
 				.stream()
 				.map(this::toItemResponse)
@@ -81,7 +88,7 @@ public class InboundOrderService {
 	@Transactional
 	public InboundOrderDetailResponse createInboundOrder(InboundOrderCreateRequest request) {
 		resolveSupplierId(request.supplierId());
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		List<InboundOrderItemEntity> items = buildValidatedItems(request.items());
 
 		InboundOrderEntity inboundOrder = new InboundOrderEntity(
@@ -89,7 +96,7 @@ public class InboundOrderService {
 				generateInboundOrderCode(),
 				request.supplierId(),
 				null,
-				request.warehouseId(),
+				warehouseId,
 				null,
 				parseDateTime(request.expectedArrivalAt()),
 				null,
@@ -108,10 +115,11 @@ public class InboundOrderService {
 	@Transactional
 	public InboundOrderDetailResponse updateInboundOrder(Long id, InboundOrderUpdateRequest request) {
 		InboundOrderEntity currentOrder = getExistingInboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingArrival(currentOrder.status(), "当前入库单状态不允许编辑");
 
 		resolveSupplierId(request.supplierId());
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		List<InboundOrderItemEntity> items = buildValidatedItems(request.items());
 
 		InboundOrderEntity updatedOrder = new InboundOrderEntity(
@@ -119,7 +127,7 @@ public class InboundOrderService {
 				currentOrder.orderCode(),
 				request.supplierId(),
 				currentOrder.supplierName(),
-				request.warehouseId(),
+				warehouseId,
 				currentOrder.warehouseName(),
 				parseDateTime(request.expectedArrivalAt()),
 				currentOrder.actualArrivalAt(),
@@ -139,6 +147,7 @@ public class InboundOrderService {
 	@Transactional
 	public void confirmArrival(Long id) {
 		InboundOrderEntity currentOrder = getExistingInboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingArrival(currentOrder.status(), "当前入库单状态不允许到货确认");
 		inboundOrderRepository.updateStatus(id, STATUS_WAIT_PUTAWAY, LocalDateTime.now());
 		InboundOrderEntity updatedOrder = getExistingInboundOrder(id);
@@ -149,6 +158,7 @@ public class InboundOrderService {
 	@Transactional
 	public void cancelInboundOrder(Long id) {
 		InboundOrderEntity currentOrder = getExistingInboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingArrival(currentOrder.status(), "当前入库单状态不允许取消");
 		inboundOrderRepository.updateStatus(id, STATUS_CANCELLED, currentOrder.actualArrivalAt());
 	}

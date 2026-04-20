@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.inventorystock.domain.entity.InventoryStockEntity;
 import com.nongcang.server.modules.inventorystock.repository.InventoryStockQueryRepository;
@@ -53,6 +54,7 @@ public class InventoryStocktakingService {
 	private final WarehouseRepository warehouseRepository;
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public InventoryStocktakingService(
 			InventoryStocktakingRepository inventoryStocktakingRepository,
@@ -61,7 +63,8 @@ public class InventoryStocktakingService {
 			InventoryTransactionRepository inventoryTransactionRepository,
 			WarehouseRepository warehouseRepository,
 			WarehouseZoneRepository warehouseZoneRepository,
-			QuantityPrecisionValidator quantityPrecisionValidator) {
+			QuantityPrecisionValidator quantityPrecisionValidator,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inventoryStocktakingRepository = inventoryStocktakingRepository;
 		this.inventoryStockQueryRepository = inventoryStockQueryRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
@@ -69,12 +72,15 @@ public class InventoryStocktakingService {
 		this.warehouseRepository = warehouseRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InventoryStocktakingListItemResponse> getInventoryStocktakingList(
 			InventoryStocktakingListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inventoryStocktakingRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
@@ -82,6 +88,7 @@ public class InventoryStocktakingService {
 
 	public InventoryStocktakingDetailResponse getInventoryStocktakingDetail(Long id) {
 		InventoryStocktakingOrderEntity order = getExistingOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(order.warehouseId());
 		List<InventoryStocktakingItemResponse> items = inventoryStocktakingRepository.findItemsByOrderId(id)
 				.stream()
 				.map(this::toItemResponse)
@@ -91,17 +98,17 @@ public class InventoryStocktakingService {
 
 	@Transactional
 	public InventoryStocktakingDetailResponse createInventoryStocktaking(InventoryStocktakingCreateRequest request) {
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		if (request.zoneId() != null) {
 			WarehouseZoneEntity zone = resolveZone(request.zoneId());
-			if (!Objects.equals(zone.warehouseId(), request.warehouseId())) {
+			if (!Objects.equals(zone.warehouseId(), warehouseId)) {
 				throw new BusinessException(CommonErrorCode.WAREHOUSE_LOCATION_ZONE_MISMATCH);
 			}
 		}
 
 		List<InventoryStockEntity> scopeStocks = inventoryStockQueryRepository.findAll()
 				.stream()
-				.filter(stock -> Objects.equals(stock.warehouseId(), request.warehouseId()))
+				.filter(stock -> Objects.equals(stock.warehouseId(), warehouseId))
 				.filter(stock -> request.zoneId() == null || Objects.equals(stock.zoneId(), request.zoneId()))
 				.toList();
 
@@ -110,7 +117,7 @@ public class InventoryStocktakingService {
 		}
 
 		long orderId = inventoryStocktakingRepository.insertOrder(
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				STATUS_PENDING_COUNT,
 				generateStocktakingCode(),
@@ -124,6 +131,7 @@ public class InventoryStocktakingService {
 			Long id,
 			InventoryStocktakingItemSaveBatchRequest request) {
 		InventoryStocktakingOrderEntity order = getExistingOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(order.warehouseId());
 		ensureEditable(order.status());
 
 		Map<Long, InventoryStocktakingItemEntity> itemMap = inventoryStocktakingRepository.findItemsByOrderId(id)
@@ -161,6 +169,7 @@ public class InventoryStocktakingService {
 	@Transactional
 	public void confirm(Long id) {
 		InventoryStocktakingOrderEntity order = getExistingOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(order.warehouseId());
 
 		if (!Objects.equals(order.status(), STATUS_WAIT_CONFIRM)) {
 			throw new BusinessException(CommonErrorCode.INVENTORY_STOCKTAKING_STATUS_INVALID);
@@ -208,6 +217,7 @@ public class InventoryStocktakingService {
 	@Transactional
 	public void cancel(Long id) {
 		InventoryStocktakingOrderEntity order = getExistingOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(order.warehouseId());
 
 		if (!Objects.equals(order.status(), STATUS_PENDING_COUNT)
 				&& !Objects.equals(order.status(), STATUS_WAIT_CONFIRM)) {

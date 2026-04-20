@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import AssistantWidget from '../../features/assistant/AssistantWidget'
-import { isPathAllowed } from '../../features/auth/role-access'
+import { isPathAllowed, resolveRoleCode } from '../../features/auth/role-access'
 import { useAuthSession } from '../../features/auth/useAuthSession'
 import './MainLayout.css'
 
@@ -283,6 +283,7 @@ function MainLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setLoggedOut, user } = useAuthSession()
+  const roleCode = resolveRoleCode(user)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
     () =>
       Object.fromEntries(
@@ -306,9 +307,9 @@ function MainLayout() {
             (child) =>
               !child.path ||
               !child.allowedRoles ||
-              child.allowedRoles.includes(user?.roleCode ?? ''),
+              child.allowedRoles.includes(roleCode ?? ''),
           )
-          .filter((child) => !child.path || isPathAllowed(user?.roleCode, child.path))
+          .filter((child) => !child.path || isPathAllowed(roleCode, child.path))
           .map((child) => ({
             ...child,
             active: child.path === location.pathname,
@@ -318,7 +319,7 @@ function MainLayout() {
             Boolean(section.children?.some((child) => child.path === location.pathname))
           : false,
       })),
-    [expandedSections, location.pathname, user?.roleCode],
+    [expandedSections, location.pathname, roleCode],
   )
 
   const mobileQuickLinks = useMemo(

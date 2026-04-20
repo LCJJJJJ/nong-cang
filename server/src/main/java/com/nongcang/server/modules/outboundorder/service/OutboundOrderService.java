@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.customer.repository.CustomerRepository;
 import com.nongcang.server.modules.outboundtask.service.OutboundTaskService;
@@ -46,6 +47,7 @@ public class OutboundOrderService {
 	private final ProductArchiveRepository productArchiveRepository;
 	private final OutboundTaskService outboundTaskService;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public OutboundOrderService(
 			OutboundOrderRepository outboundOrderRepository,
@@ -53,18 +55,22 @@ public class OutboundOrderService {
 			WarehouseRepository warehouseRepository,
 			ProductArchiveRepository productArchiveRepository,
 			OutboundTaskService outboundTaskService,
-			QuantityPrecisionValidator quantityPrecisionValidator) {
+			QuantityPrecisionValidator quantityPrecisionValidator,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.outboundOrderRepository = outboundOrderRepository;
 		this.customerRepository = customerRepository;
 		this.warehouseRepository = warehouseRepository;
 		this.productArchiveRepository = productArchiveRepository;
 		this.outboundTaskService = outboundTaskService;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<OutboundOrderListItemResponse> getOutboundOrderList(OutboundOrderListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return outboundOrderRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
@@ -72,6 +78,7 @@ public class OutboundOrderService {
 
 	public OutboundOrderDetailResponse getOutboundOrderDetail(Long id) {
 		OutboundOrderEntity outboundOrder = getExistingOutboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(outboundOrder.warehouseId());
 		List<OutboundOrderItemResponse> items = outboundOrderRepository.findItemsByOrderId(id)
 				.stream()
 				.map(this::toItemResponse)
@@ -82,7 +89,7 @@ public class OutboundOrderService {
 	@Transactional
 	public OutboundOrderDetailResponse createOutboundOrder(OutboundOrderCreateRequest request) {
 		resolveCustomerId(request.customerId());
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		List<OutboundOrderItemEntity> items = buildValidatedItems(request.items());
 
 		OutboundOrderEntity outboundOrder = new OutboundOrderEntity(
@@ -90,7 +97,7 @@ public class OutboundOrderService {
 				generateOutboundOrderCode(),
 				request.customerId(),
 				null,
-				request.warehouseId(),
+				warehouseId,
 				null,
 				parseDateTime(request.expectedDeliveryAt()),
 				null,
@@ -109,10 +116,11 @@ public class OutboundOrderService {
 	@Transactional
 	public OutboundOrderDetailResponse updateOutboundOrder(Long id, OutboundOrderUpdateRequest request) {
 		OutboundOrderEntity currentOrder = getExistingOutboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingAllocate(currentOrder.status(), "当前出库单状态不允许编辑");
 
 		resolveCustomerId(request.customerId());
-		resolveWarehouseId(request.warehouseId());
+		Long warehouseId = resolveWarehouseId(warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId()));
 		List<OutboundOrderItemEntity> items = buildValidatedItems(request.items());
 
 		OutboundOrderEntity updatedOrder = new OutboundOrderEntity(
@@ -120,7 +128,7 @@ public class OutboundOrderService {
 				currentOrder.orderCode(),
 				request.customerId(),
 				currentOrder.customerName(),
-				request.warehouseId(),
+				warehouseId,
 				currentOrder.warehouseName(),
 				parseDateTime(request.expectedDeliveryAt()),
 				currentOrder.actualOutboundAt(),
@@ -140,6 +148,7 @@ public class OutboundOrderService {
 	@Transactional
 	public void cancelOutboundOrder(Long id) {
 		OutboundOrderEntity currentOrder = getExistingOutboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingAllocate(currentOrder.status(), "当前出库单状态不允许取消");
 		outboundOrderRepository.updateStatus(id, STATUS_CANCELLED, currentOrder.actualOutboundAt());
 	}
@@ -147,6 +156,7 @@ public class OutboundOrderService {
 	@Transactional
 	public void dispatchOutboundOrder(Long id) {
 		OutboundOrderEntity currentOrder = getExistingOutboundOrder(id);
+		warehouseAccessScopeService.assertWarehouseAccess(currentOrder.warehouseId());
 		ensurePendingAllocate(currentOrder.status(), "当前出库单状态不允许生成拣货任务");
 		List<OutboundOrderItemEntity> items = outboundOrderRepository.findItemsByOrderId(id);
 		outboundOrderRepository.updateStatus(id, STATUS_WAIT_PICK, null);
