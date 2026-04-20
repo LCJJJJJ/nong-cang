@@ -21,6 +21,7 @@ import type {
   WarehouseZoneListItem,
   WarehouseZoneListQuery,
 } from '../../features/warehousezone/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import './WarehouseZonePage.css'
 
 type WarehouseZoneRow = TreeTableRow & WarehouseZoneListItem
@@ -69,6 +70,7 @@ function WarehouseZonePage() {
   const [formState, setFormState] = useState<WarehouseZoneFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   useEffect(() => {
     let isMounted = true
@@ -176,27 +178,31 @@ function WarehouseZonePage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="warehouse-zone-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: WarehouseZoneRow) => (
+              <div className="warehouse-zone-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -394,9 +400,11 @@ function WarehouseZonePage() {
           <p>维护仓库内部功能分区，为库位管理、入库上架和后续库存业务提供统一库区维度。</p>
         </div>
 
-        <button type="button" className="warehouse-zone-page__primary" onClick={handleCreate}>
-          新增库区
-        </button>
+        {canManage ? (
+          <button type="button" className="warehouse-zone-page__primary" onClick={handleCreate}>
+            新增库区
+          </button>
+        ) : null}
       </section>
 
       <section className="warehouse-zone-page__table-shell">

@@ -19,6 +19,7 @@ import type {
   QualityGradeListItem,
   QualityGradeListQuery,
 } from '../../features/qualitygrade/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import './QualityGradePage.css'
 
 type QualityGradeRow = TreeTableRow & QualityGradeListItem
@@ -59,6 +60,7 @@ function QualityGradePage() {
   const [formState, setFormState] = useState<QualityGradeFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   useEffect(() => {
     let isMounted = true
@@ -150,27 +152,31 @@ function QualityGradePage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="quality-grade-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: QualityGradeRow) => (
+              <div className="quality-grade-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -347,9 +353,11 @@ function QualityGradePage() {
           <p>维护统一品质等级标准，为产品档案和后续质检业务提供明确等级口径。</p>
         </div>
 
-        <button type="button" className="quality-grade-page__primary" onClick={handleCreate}>
-          新增品质等级
-        </button>
+        {canManage ? (
+          <button type="button" className="quality-grade-page__primary" onClick={handleCreate}>
+            新增品质等级
+          </button>
+        ) : null}
       </section>
 
       <section className="quality-grade-page__table-shell">

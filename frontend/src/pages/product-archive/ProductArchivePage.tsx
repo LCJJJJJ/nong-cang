@@ -21,6 +21,7 @@ import type {
   ProductArchiveListItem,
   ProductArchiveListQuery,
 } from '../../features/productarchive/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import { getProductOriginOptions } from '../../features/productorigin/api'
 import type { ProductOriginOption } from '../../features/productorigin/types'
 import { getProductUnitOptions } from '../../features/productunit/api'
@@ -91,6 +92,7 @@ function ProductArchivePage() {
   const [formState, setFormState] = useState<ProductArchiveFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   const flattenedCategoryOptions = useMemo(
     () => flattenCategoryOptions(categoryOptions),
@@ -236,27 +238,31 @@ function ProductArchivePage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="product-archive-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: ProductArchiveRow) => (
+              <div className="product-archive-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -454,9 +460,11 @@ function ProductArchivePage() {
           <p>维护农产品主数据档案，统一挂接分类、单位、产地、储存条件和品质等级，并直接维护保质期信息。</p>
         </div>
 
-        <button type="button" className="product-archive-page__primary" onClick={handleCreate}>
-          新增产品档案
-        </button>
+        {canManage ? (
+          <button type="button" className="product-archive-page__primary" onClick={handleCreate}>
+            新增产品档案
+          </button>
+        ) : null}
       </section>
 
       <section className="product-archive-page__table-shell">

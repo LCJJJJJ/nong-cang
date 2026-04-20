@@ -19,6 +19,7 @@ import type {
   StorageConditionListItem,
   StorageConditionListQuery,
 } from '../../features/storagecondition/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import './StorageConditionPage.css'
 
 type StorageConditionRow = TreeTableRow & StorageConditionListItem
@@ -77,6 +78,7 @@ function StorageConditionPage() {
     useState<StorageConditionFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   useEffect(() => {
     let isMounted = true
@@ -186,27 +188,31 @@ function StorageConditionPage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="storage-condition-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: StorageConditionRow) => (
+              <div className="storage-condition-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -406,9 +412,11 @@ function StorageConditionPage() {
           <p>维护仓内存放环境标准，为产品分类和产品档案提供统一规则。</p>
         </div>
 
-        <button type="button" className="storage-condition-page__primary" onClick={handleCreate}>
-          新增储存条件
-        </button>
+        {canManage ? (
+          <button type="button" className="storage-condition-page__primary" onClick={handleCreate}>
+            新增储存条件
+          </button>
+        ) : null}
       </section>
 
       <section className="storage-condition-page__table-shell">

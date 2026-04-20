@@ -19,6 +19,7 @@ import type {
   WarehouseListItem,
   WarehouseListQuery,
 } from '../../features/warehouse/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import './WarehousePage.css'
 
 type WarehouseRow = TreeTableRow & WarehouseListItem
@@ -66,6 +67,7 @@ function WarehousePage() {
   const [formState, setFormState] = useState<WarehouseFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   useEffect(() => {
     let isMounted = true
@@ -163,27 +165,31 @@ function WarehousePage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="warehouse-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: WarehouseRow) => (
+              <div className="warehouse-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -381,9 +387,11 @@ function WarehousePage() {
           <p>维护仓库主数据，为库区、库位和后续出入库业务提供统一仓库维度。</p>
         </div>
 
-        <button type="button" className="warehouse-page__primary" onClick={handleCreate}>
-          新增仓库
-        </button>
+        {canManage ? (
+          <button type="button" className="warehouse-page__primary" onClick={handleCreate}>
+            新增仓库
+          </button>
+        ) : null}
       </section>
 
       <section className="warehouse-page__table-shell">

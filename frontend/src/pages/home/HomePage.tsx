@@ -21,6 +21,7 @@ import type {
   CategoryTreeItem,
   CategoryTreeQuery,
 } from '../../features/category/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import { getStorageConditionOptions } from '../../features/storagecondition/api'
 import type { StorageConditionOption } from '../../features/storagecondition/types'
 import './HomePage.css'
@@ -71,6 +72,7 @@ function HomePage() {
   const [formState, setFormState] = useState<CategoryFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   const flattenedOptions = useMemo(
     () => flattenCategoryOptions(categoryOptions),
@@ -331,34 +333,38 @@ function HomePage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.createdAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 260,
-      width: 260,
-      sticky: 'right',
-      align: 'right',
-      render: (row, context) => (
-        <div className="category-page__row-actions">
-          {context.depth < 2 ? (
-            <button type="button" onClick={() => handleCreateChild(row)}>
-              新增子类
-            </button>
-          ) : null}
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          {!context.hasChildren ? (
-            <button type="button" onClick={() => handleDelete(row)}>
-              删除
-            </button>
-          ) : null}
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 260,
+            width: 260,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: CategoryPageRow, context: { depth: number; hasChildren: boolean }) => (
+              <div className="category-page__row-actions">
+                {context.depth < 2 ? (
+                  <button type="button" onClick={() => handleCreateChild(row)}>
+                    新增子类
+                  </button>
+                ) : null}
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                {!context.hasChildren ? (
+                  <button type="button" onClick={() => handleDelete(row)}>
+                    删除
+                  </button>
+                ) : null}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const parentIdFieldError = getFieldError(formError?.fieldErrors, 'parentId')
@@ -447,9 +453,11 @@ function HomePage() {
           </button>
         </div>
 
-        <button type="button" className="category-page__primary" onClick={handleCreateRoot}>
-          新增分类
-        </button>
+        {canManage ? (
+          <button type="button" className="category-page__primary" onClick={handleCreateRoot}>
+            新增分类
+          </button>
+        ) : null}
       </section>
 
       <section className="category-page__table-shell">

@@ -19,6 +19,7 @@ import type {
   ProductOriginListItem,
   ProductOriginListQuery,
 } from '../../features/productorigin/types'
+import { usePagePermission } from '../../features/auth/usePagePermission'
 import './ProductOriginPage.css'
 
 type ProductOriginRow = TreeTableRow & ProductOriginListItem
@@ -62,6 +63,7 @@ function ProductOriginPage() {
   const [formState, setFormState] = useState<ProductOriginFormState>(initialFormState)
   const [formError, setFormError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { canManage } = usePagePermission()
 
   useEffect(() => {
     let isMounted = true
@@ -159,27 +161,31 @@ function ProductOriginPage() {
       minWidth: 170,
       render: (row) => formatDateTime(row.updatedAt),
     },
-    {
-      key: 'actions',
-      title: '操作',
-      minWidth: 220,
-      width: 220,
-      sticky: 'right',
-      align: 'right',
-      render: (row) => (
-        <div className="product-origin-page__row-actions">
-          <button type="button" onClick={() => handleEdit(row.id)}>
-            编辑
-          </button>
-          <button type="button" onClick={() => handleToggleStatus(row)}>
-            {row.status === 1 ? '停用' : '启用'}
-          </button>
-          <button type="button" onClick={() => handleDelete(row)}>
-            删除
-          </button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? [
+          {
+            key: 'actions',
+            title: '操作',
+            minWidth: 220,
+            width: 220,
+            sticky: 'right' as const,
+            align: 'right' as const,
+            render: (row: ProductOriginRow) => (
+              <div className="product-origin-page__row-actions">
+                <button type="button" onClick={() => handleEdit(row.id)}>
+                  编辑
+                </button>
+                <button type="button" onClick={() => handleToggleStatus(row)}>
+                  {row.status === 1 ? '停用' : '启用'}
+                </button>
+                <button type="button" onClick={() => handleDelete(row)}>
+                  删除
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ]
 
   const handleSearch = async () => {
@@ -372,9 +378,11 @@ function ProductOriginPage() {
           <p>维护标准产地口径，为产品档案、追溯和统计分析提供一致数据来源。</p>
         </div>
 
-        <button type="button" className="product-origin-page__primary" onClick={handleCreate}>
-          新增产地信息
-        </button>
+        {canManage ? (
+          <button type="button" className="product-origin-page__primary" onClick={handleCreate}>
+            新增产地信息
+          </button>
+        ) : null}
       </section>
 
       <section className="product-origin-page__table-shell">
