@@ -158,71 +158,77 @@ public class AlertRefreshService {
 					.toList();
 			case "PUTAWAY_TIMEOUT" -> putawayTaskRepository.findAll().stream()
 					.filter(task -> task.status() == 1 || task.status() == 2)
-					.filter(task -> exceededHours(task.createdAt(), rule.thresholdValue()))
+					.filter(task -> exceededThreshold(task.createdAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(task -> new AlertCandidate(
 							"PUTAWAY_TASK",
 							task.id(),
 							task.taskCode(),
 							task.createdAt(),
 							task.taskCode() + " 待上架超时",
-							"上架任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " 小时未完成上架"))
+							"上架任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未完成上架"))
 					.toList();
 			case "OUTBOUND_PICK_TIMEOUT" -> outboundTaskRepository.findAll().stream()
 					.filter(task -> task.status() == 2)
-					.filter(task -> exceededHours(task.updatedAt(), rule.thresholdValue()))
+					.filter(task -> exceededThreshold(task.updatedAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(task -> new AlertCandidate(
 							"OUTBOUND_TASK",
 							task.id(),
 							task.taskCode(),
 							task.updatedAt(),
 							task.taskCode() + " 待拣货超时",
-							"拣货任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " 小时未完成拣货"))
+							"拣货任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未完成拣货"))
 					.toList();
 			case "OUTBOUND_SHIP_TIMEOUT" -> outboundTaskRepository.findAll().stream()
 					.filter(task -> task.status() == 3)
-					.filter(task -> exceededHours(task.pickedAt(), rule.thresholdValue()))
+					.filter(task -> exceededThreshold(task.pickedAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(task -> new AlertCandidate(
 							"OUTBOUND_TASK",
 							task.id(),
 							task.taskCode(),
 							task.pickedAt(),
 							task.taskCode() + " 待出库超时",
-							"拣货任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " 小时未完成出库"))
+							"拣货任务 " + task.taskCode() + " 已超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未完成出库"))
 					.toList();
 			case "ABNORMAL_STOCK_STAGNANT" -> abnormalStockRepository.findAll().stream()
 					.filter(stock -> stock.status() == 1)
-					.filter(stock -> exceededHours(stock.createdAt(), rule.thresholdValue()))
+					.filter(stock -> exceededThreshold(stock.createdAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(stock -> new AlertCandidate(
 							"ABNORMAL_STOCK",
 							stock.id(),
 							stock.abnormalCode(),
 							stock.createdAt(),
 							stock.abnormalCode() + " 异常库存滞留",
-							"异常库存 " + stock.abnormalCode() + " 已锁定超过 " + rule.thresholdValue() + " 小时未处理"))
+							"异常库存 " + stock.abnormalCode() + " 已锁定超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未处理"))
 					.toList();
 			case "STOCKTAKING_CONFIRM_TIMEOUT" -> inventoryStocktakingRepository.findAll().stream()
 					.filter(order -> order.status() == 2)
-					.filter(order -> exceededHours(order.updatedAt(), rule.thresholdValue()))
+					.filter(order -> exceededThreshold(order.updatedAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(order -> new AlertCandidate(
 							"INVENTORY_STOCKTAKING_ORDER",
 							order.id(),
 							order.stocktakingCode(),
 							order.updatedAt(),
 							order.stocktakingCode() + " 待确认超时",
-							"盘点单 " + order.stocktakingCode() + " 已超过 " + rule.thresholdValue() + " 小时未确认"))
+							"盘点单 " + order.stocktakingCode() + " 已超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未确认"))
 					.toList();
 			case "INBOUND_PENDING_INSPECTION" -> inboundRecordRepository.findAll().stream()
 					.filter(record -> qualityInspectionRepository
 							.sumInspectQuantityBySource("INBOUND_RECORD", record.id())
 							.compareTo(record.quantity()) < 0)
-					.filter(record -> exceededHours(record.occurredAt(), rule.thresholdValue()))
+					.filter(record -> exceededThreshold(record.occurredAt(), rule.thresholdValue(), rule.thresholdUnit()))
 					.map(record -> new AlertCandidate(
 							"INBOUND_RECORD",
 							record.id(),
 							record.recordCode(),
 							record.occurredAt(),
 							record.recordCode() + " 待质检超时",
-							"入库记录 " + record.recordCode() + " 已超过 " + rule.thresholdValue() + " 小时未完成质检"))
+							"入库记录 " + record.recordCode() + " 已超过 " + rule.thresholdValue() + " "
+									+ thresholdUnitLabel(rule.thresholdUnit()) + " 未完成质检"))
 					.toList();
 			case "NEAR_EXPIRY" -> inventoryBatchRepository.findActiveForAlerting().stream()
 					.filter(batch -> batch.warningAt() != null)
@@ -258,11 +264,25 @@ public class AlertRefreshService {
 		};
 	}
 
-	private boolean exceededHours(LocalDateTime baseTime, BigDecimal thresholdHours) {
+	private boolean exceededThreshold(LocalDateTime baseTime, BigDecimal thresholdValue, String thresholdUnit) {
 		if (baseTime == null) {
 			return false;
 		}
-		return Duration.between(baseTime, LocalDateTime.now()).toHours() >= thresholdHours.longValue();
+		long actualMillis = Duration.between(baseTime, LocalDateTime.now()).toMillis();
+		BigDecimal thresholdMillis = switch (thresholdUnit) {
+			case "MINUTE" -> thresholdValue.multiply(BigDecimal.valueOf(60_000L));
+			case "HOUR" -> thresholdValue.multiply(BigDecimal.valueOf(3_600_000L));
+			default -> BigDecimal.valueOf(Long.MAX_VALUE);
+		};
+		return BigDecimal.valueOf(actualMillis).compareTo(thresholdMillis) >= 0;
+	}
+
+	private String thresholdUnitLabel(String thresholdUnit) {
+		return switch (thresholdUnit) {
+			case "MINUTE" -> "分钟";
+			case "HOUR" -> "小时";
+			default -> thresholdUnit;
+		};
 	}
 
 	private String buildKey(String ruleCode, String sourceType, Long sourceId) {

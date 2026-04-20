@@ -27,9 +27,19 @@ import './AlertRulePage.css'
 
 type AlertRuleRow = TreeTableRow & AlertRuleListItem
 
+const timeoutAlertTypes = new Set([
+  'PUTAWAY_TIMEOUT',
+  'OUTBOUND_PICK_TIMEOUT',
+  'OUTBOUND_SHIP_TIMEOUT',
+  'ABNORMAL_STOCK_STAGNANT',
+  'STOCKTAKING_CONFIRM_TIMEOUT',
+  'INBOUND_PENDING_INSPECTION',
+])
+
 interface AlertRuleFormState {
   severity: string
   thresholdValue: string
+  thresholdUnit: string
   description: string
   sortOrder: string
 }
@@ -37,6 +47,7 @@ interface AlertRuleFormState {
 const initialFormState: AlertRuleFormState = {
   severity: 'MEDIUM',
   thresholdValue: '',
+  thresholdUnit: 'HOUR',
   description: '',
   sortOrder: '0',
 }
@@ -387,6 +398,37 @@ function AlertRulePage() {
               </label>
 
               <label className="alert-rule-page__field">
+                <span>单位</span>
+                {editingId &&
+                timeoutAlertTypes.has(rules.find((item) => item.id === editingId)?.alertType ?? '') ? (
+                  <>
+                    <select
+                      value={formState.thresholdUnit}
+                      onChange={(event) =>
+                        setFormState((current) => ({
+                          ...current,
+                          thresholdUnit: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="MINUTE">{getAlertThresholdUnitLabel('MINUTE')}</option>
+                      <option value="HOUR">{getAlertThresholdUnitLabel('HOUR')}</option>
+                    </select>
+                    <small>切换单位不会自动换算阈值，请同步确认阈值数值。</small>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      value={getAlertThresholdUnitLabel(formState.thresholdUnit)}
+                      readOnly
+                      disabled
+                    />
+                    <small>当前规则单位固定，不可修改。</small>
+                  </>
+                )}
+              </label>
+
+              <label className="alert-rule-page__field">
                 <span>排序值</span>
                 <input
                   type="number"
@@ -452,6 +494,7 @@ function mapDetailToFormState(detail: AlertRuleDetail) {
   return {
     severity: detail.severity,
     thresholdValue: String(detail.thresholdValue),
+    thresholdUnit: detail.thresholdUnit,
     description: detail.description ?? '',
     sortOrder: String(detail.sortOrder),
   }
@@ -461,6 +504,7 @@ function mapFormStateToPayload(formState: AlertRuleFormState): AlertRuleUpdatePa
   return {
     severity: formState.severity,
     thresholdValue: Number(formState.thresholdValue),
+    thresholdUnit: formState.thresholdUnit,
     description: formState.description.trim() || null,
     sortOrder: Number(formState.sortOrder || '0'),
   }

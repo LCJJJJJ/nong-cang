@@ -11,6 +11,8 @@ public record AlertRuleUpdateRequest(
 		String severity,
 		@NotNull(message = "阈值不能为空")
 		BigDecimal thresholdValue,
+		@NotBlank(message = "阈值单位不能为空")
+		String thresholdUnit,
 		@Size(max = 255, message = "规则说明长度不能超过255个字符")
 		String description,
 		Integer sortOrder) {

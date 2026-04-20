@@ -109,6 +109,7 @@ public class AlertRuleRepository {
 				UPDATE alert_rule
 				SET severity = :severity,
 				    threshold_value = :thresholdValue,
+				    threshold_unit = :thresholdUnit,
 				    description = :description,
 				    sort_order = :sortOrder
 				WHERE id = :id
@@ -116,6 +117,7 @@ public class AlertRuleRepository {
 				.addValue("id", entity.id())
 				.addValue("severity", entity.severity())
 				.addValue("thresholdValue", entity.thresholdValue())
+				.addValue("thresholdUnit", entity.thresholdUnit())
 				.addValue("description", entity.description())
 				.addValue("sortOrder", entity.sortOrder()));
 	}

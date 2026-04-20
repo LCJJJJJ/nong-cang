@@ -25,6 +25,7 @@ export interface AlertRuleListQuery {
 export interface AlertRuleUpdatePayload {
   severity: string
   thresholdValue: number
+  thresholdUnit: string
   description: string | null
   sortOrder: number
 }

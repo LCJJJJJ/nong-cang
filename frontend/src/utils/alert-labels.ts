@@ -40,6 +40,8 @@ export function getAlertThresholdUnitLabel(thresholdUnit: string) {
   switch (thresholdUnit) {
     case 'QUANTITY':
       return '件'
+    case 'MINUTE':
+      return '分钟'
     case 'HOUR':
       return '小时'
     case 'DAY':

@@ -43,20 +43,40 @@ class AlertRuleControllerTests {
 
 	@Test
 	void shouldUpdateAlertRule() throws Exception {
-		mockMvc.perform(put("/api/alert-rule/1")
+		mockMvc.perform(put("/api/alert-rule/2")
 					.header("Authorization", bearerToken())
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{
 							  "severity": "HIGH",
 							  "thresholdValue": 8,
+							  "thresholdUnit": "MINUTE",
 							  "description": "测试更新",
 							  "sortOrder": 11
 							}
 							"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.severity").value("HIGH"))
-				.andExpect(jsonPath("$.data.thresholdValue").value(8.0));
+				.andExpect(jsonPath("$.data.thresholdValue").value(8.0))
+				.andExpect(jsonPath("$.data.thresholdUnit").value("MINUTE"));
+	}
+
+	@Test
+	void shouldRejectInvalidThresholdUnitForNonTimeoutRule() throws Exception {
+		mockMvc.perform(put("/api/alert-rule/8")
+					.header("Authorization", bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "severity": "HIGH",
+							  "thresholdValue": 1,
+							  "thresholdUnit": "MINUTE",
+							  "description": "非法单位测试",
+							  "sortOrder": 81
+							}
+							"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("ALERT_RULE_THRESHOLD_UNIT_INVALID"));
 	}
 
 	@Test

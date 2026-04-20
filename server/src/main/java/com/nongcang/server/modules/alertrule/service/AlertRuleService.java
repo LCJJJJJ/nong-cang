@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
@@ -20,6 +21,14 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class AlertRuleService {
+
+	private static final Set<String> TIMEOUT_ALERT_TYPES = Set.of(
+			"PUTAWAY_TIMEOUT",
+			"OUTBOUND_PICK_TIMEOUT",
+			"OUTBOUND_SHIP_TIMEOUT",
+			"ABNORMAL_STOCK_STAGNANT",
+			"STOCKTAKING_CONFIRM_TIMEOUT",
+			"INBOUND_PENDING_INSPECTION");
 
 	private final AlertRuleRepository alertRuleRepository;
 
@@ -44,6 +53,7 @@ public class AlertRuleService {
 		AlertRuleEntity currentRule = getExistingRule(id);
 		validateSeverity(request.severity());
 		validateThreshold(request.thresholdValue());
+		String thresholdUnit = normalizeThresholdUnit(request.thresholdUnit(), currentRule.alertType());
 
 		AlertRuleEntity updated = new AlertRuleEntity(
 				currentRule.id(),
@@ -52,7 +62,7 @@ public class AlertRuleService {
 				currentRule.alertType(),
 				request.severity().trim().toUpperCase(),
 				request.thresholdValue(),
-				currentRule.thresholdUnit(),
+				thresholdUnit,
 				currentRule.enabled(),
 				trimToNull(request.description()),
 				request.sortOrder() == null ? currentRule.sortOrder() : request.sortOrder(),
@@ -103,6 +113,33 @@ public class AlertRuleService {
 		if (thresholdValue == null || thresholdValue.compareTo(BigDecimal.ZERO) < 0) {
 			throw new BusinessException(CommonErrorCode.ALERT_RULE_THRESHOLD_INVALID);
 		}
+	}
+
+	private String normalizeThresholdUnit(String thresholdUnit, String alertType) {
+		String normalized = thresholdUnit == null ? "" : thresholdUnit.trim().toUpperCase();
+
+		if (TIMEOUT_ALERT_TYPES.contains(alertType)) {
+			if (!Set.of("MINUTE", "HOUR").contains(normalized)) {
+				throw new BusinessException(CommonErrorCode.ALERT_RULE_THRESHOLD_UNIT_INVALID);
+			}
+			return normalized;
+		}
+
+		if ("LOW_STOCK".equals(alertType)) {
+			if (!"QUANTITY".equals(normalized)) {
+				throw new BusinessException(CommonErrorCode.ALERT_RULE_THRESHOLD_UNIT_INVALID);
+			}
+			return normalized;
+		}
+
+		if (Set.of("NEAR_EXPIRY", "EXPIRED").contains(alertType)) {
+			if (!"DAY".equals(normalized)) {
+				throw new BusinessException(CommonErrorCode.ALERT_RULE_THRESHOLD_UNIT_INVALID);
+			}
+			return normalized;
+		}
+
+		throw new BusinessException(CommonErrorCode.ALERT_RULE_THRESHOLD_UNIT_INVALID);
 	}
 
 	private AlertRuleListItemResponse toListItemResponse(AlertRuleEntity entity) {
