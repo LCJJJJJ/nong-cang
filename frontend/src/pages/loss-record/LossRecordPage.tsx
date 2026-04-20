@@ -28,6 +28,10 @@ import {
   getLossSourceModeLabel,
   getLossSourceTypeLabel,
 } from '../../utils/quality-loss-labels'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './LossRecordPage.css'
 
@@ -533,6 +537,8 @@ function LossRecordPage() {
                       min="0"
                       step={buildQuantityStep(selectedProductPrecision)}
                       value={formState.quantity}
+                      onWheel={preventNativeNumberInputWheel}
+                      onKeyDown={preventNativeNumberInputStep}
                       onChange={(event) =>
                         setFormState((current) => ({
                           ...current,

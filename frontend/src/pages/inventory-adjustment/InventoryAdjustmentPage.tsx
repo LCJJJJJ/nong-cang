@@ -22,6 +22,10 @@ import { getWarehouseLocationOptions } from '../../features/warehouselocation/ap
 import type { WarehouseLocationOption } from '../../features/warehouselocation/types'
 import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
 import type { WarehouseZoneOption } from '../../features/warehousezone/types'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './InventoryAdjustmentPage.css'
 
@@ -517,6 +521,8 @@ function InventoryAdjustmentPage() {
                   min="0"
                   step={buildQuantityStep(selectedProductPrecision)}
                   value={formState.quantity}
+                  onWheel={preventNativeNumberInputWheel}
+                  onKeyDown={preventNativeNumberInputStep}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,

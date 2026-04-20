@@ -25,6 +25,10 @@ import { getSupplierOptions } from '../../features/supplier/api'
 import type { SupplierOption } from '../../features/supplier/types'
 import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './InboundOrderPage.css'
 
@@ -593,6 +597,8 @@ function InboundOrderPage() {
                         type="number"
                         step={buildQuantityStep(resolveProductPrecision(item.productId))}
                         value={item.quantity}
+                        onWheel={preventNativeNumberInputWheel}
+                        onKeyDown={preventNativeNumberInputStep}
                         onChange={(event) =>
                           handleItemChange(index, 'quantity', event.target.value)
                         }

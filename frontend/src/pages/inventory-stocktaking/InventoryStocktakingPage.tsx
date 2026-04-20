@@ -25,6 +25,10 @@ import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
 import { getWarehouseZoneOptions } from '../../features/warehousezone/api'
 import type { WarehouseZoneOption } from '../../features/warehousezone/types'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './InventoryStocktakingPage.css'
 
@@ -594,6 +598,8 @@ function InventoryStocktakingPage() {
                             min="0"
                             step={buildQuantityStep(item.precisionDigits)}
                             value={item.countedQuantity ?? ''}
+                            onWheel={preventNativeNumberInputWheel}
+                            onKeyDown={preventNativeNumberInputStep}
                             onChange={(event) =>
                               updateCurrentDetailItem(index, 'countedQuantity', event.target.value)
                             }

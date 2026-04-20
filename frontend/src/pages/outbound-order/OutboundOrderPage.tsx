@@ -25,6 +25,10 @@ import { getProductArchiveOptions } from '../../features/productarchive/api'
 import type { ProductArchiveOption } from '../../features/productarchive/types'
 import { getWarehouseOptions } from '../../features/warehouse/api'
 import type { WarehouseOption } from '../../features/warehouse/types'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './OutboundOrderPage.css'
 
@@ -585,6 +589,8 @@ function OutboundOrderPage() {
                           min="0"
                           step={buildQuantityStep(resolveProductPrecision(item.productId))}
                           value={item.quantity}
+                          onWheel={preventNativeNumberInputWheel}
+                          onKeyDown={preventNativeNumberInputStep}
                           onChange={(event) =>
                             updateFormItem(index, 'quantity', event.target.value)
                           }

@@ -21,6 +21,10 @@ import type {
   QualityInspectionListQuery,
 } from '../../features/qualityinspection/types'
 import { getInspectionSourceTypeLabel } from '../../utils/quality-loss-labels'
+import {
+  preventNativeNumberInputStep,
+  preventNativeNumberInputWheel,
+} from '../../utils/number-input'
 import { buildQuantityStep } from '../../utils/quantity'
 import './QualityInspectionPage.css'
 
@@ -439,6 +443,8 @@ function QualityInspectionPage() {
                   min="0"
                   step={buildQuantityStep(selectedProductPrecision)}
                   value={formState.inspectQuantity}
+                  onWheel={preventNativeNumberInputWheel}
+                  onKeyDown={preventNativeNumberInputStep}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
@@ -456,6 +462,8 @@ function QualityInspectionPage() {
                   min="0"
                   step={buildQuantityStep(selectedProductPrecision)}
                   value={formState.unqualifiedQuantity}
+                  onWheel={preventNativeNumberInputWheel}
+                  onKeyDown={preventNativeNumberInputStep}
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
