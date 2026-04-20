@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,9 @@ class InboundRecordControllerTests {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	@Test
 	void shouldReturnInboundRecordList() throws Exception {
@@ -104,7 +109,23 @@ class InboundRecordControllerTests {
 					.header(HttpHeaders.AUTHORIZATION, bearerToken())
 					.param("orderCode", objectMapper.readTree(createResult.getResponse().getContentAsString()).path("data").path("orderCode").asText()))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.data[0].inboundOrderId").isNotEmpty());
+				.andExpect(jsonPath("$.data[0].inboundOrderId").isNotEmpty())
+				.andExpect(jsonPath("$.data[0].shelfLifeDaysSnapshot").value(5))
+				.andExpect(jsonPath("$.data[0].warningDaysSnapshot").value(1))
+				.andExpect(jsonPath("$.data[0].expectedExpireAt").isNotEmpty());
+
+		Integer batchCount = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM inventory_batch
+				WHERE source_type = 'INBOUND_RECORD'
+				  AND source_id IN (
+				    SELECT id
+				    FROM inbound_record
+				    WHERE inbound_order_id = :inboundOrderId
+				  )
+				""", new MapSqlParameterSource("inboundOrderId", inboundOrderId), Integer.class);
+
+		org.junit.jupiter.api.Assertions.assertEquals(1, batchCount);
 	}
 
 	private String bearerToken() throws Exception {

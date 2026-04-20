@@ -17,6 +17,8 @@ export interface InventoryStockListItem {
   reservedQuantity: number
   lockedQuantity: number
   availableQuantity: number
+  nearestExpireAt: string | null
+  remainingShelfLifeDays: number | null
   updatedAt: string
 }
 

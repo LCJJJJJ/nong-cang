@@ -2,9 +2,13 @@ package com.nongcang.server.modules.inventorystock.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
+import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryBatchEntity;
+import com.nongcang.server.modules.inventorysupport.repository.InventoryBatchRepository;
 import com.nongcang.server.modules.inventorystock.domain.dto.InventoryStockListQueryRequest;
 import com.nongcang.server.modules.inventorystock.domain.entity.InventoryStockEntity;
 import com.nongcang.server.modules.inventorystock.domain.vo.InventoryStockListItemResponse;
@@ -15,14 +19,23 @@ import org.springframework.stereotype.Service;
 public class InventoryStockQueryService {
 
 	private final InventoryStockQueryRepository inventoryStockQueryRepository;
+	private final InventoryBatchRepository inventoryBatchRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
-	public InventoryStockQueryService(InventoryStockQueryRepository inventoryStockQueryRepository) {
+	public InventoryStockQueryService(
+			InventoryStockQueryRepository inventoryStockQueryRepository,
+			InventoryBatchRepository inventoryBatchRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inventoryStockQueryRepository = inventoryStockQueryRepository;
+		this.inventoryBatchRepository = inventoryBatchRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InventoryStockListItemResponse> getInventoryStockList(InventoryStockListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inventoryStockQueryRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
@@ -45,6 +58,13 @@ public class InventoryStockQueryService {
 	}
 
 	private InventoryStockListItemResponse toListItemResponse(InventoryStockEntity entity) {
+		InventoryBatchEntity nearestBatch = inventoryBatchRepository.findActiveByProductAndLocation(
+				entity.productId(),
+				entity.warehouseId(),
+				entity.locationId())
+				.stream()
+				.findFirst()
+				.orElse(null);
 		return new InventoryStockListItemResponse(
 				entity.id(),
 				entity.productId(),
@@ -64,6 +84,10 @@ public class InventoryStockQueryService {
 				InventoryStockQueryRepository.toDouble(entity.reservedQuantity()),
 				InventoryStockQueryRepository.toDouble(entity.lockedQuantity()),
 				InventoryStockQueryRepository.toDouble(entity.availableQuantity()),
+				nearestBatch == null ? null : toIsoDateTime(nearestBatch.expectedExpireAt()),
+				nearestBatch == null ? null : Math.toIntExact(ChronoUnit.DAYS.between(
+						LocalDateTime.now().toLocalDate(),
+						nearestBatch.expectedExpireAt().toLocalDate())),
 				toIsoDateTime(entity.updatedAt()));
 	}
 

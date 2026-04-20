@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,9 @@ class ProductArchiveControllerTests {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	@Test
 	void shouldReturnProductArchiveList() throws Exception {
@@ -100,6 +105,141 @@ class ProductArchiveControllerTests {
 	}
 
 	@Test
+	void shouldRecalculateActiveInventoryBatchWhenShelfLifeUpdated() throws Exception {
+		MvcResult createInboundOrderResult = mockMvc.perform(post("/api/inbound-order")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "supplierId": 1,
+							  "warehouseId": 1,
+							  "expectedArrivalAt": "2026-04-23T09:00:00",
+							  "remarks": "批次重算测试",
+							  "items": [
+							    {
+							      "productId": 1,
+							      "quantity": 6,
+							      "sortOrder": 1,
+							      "remarks": "测试"
+							    }
+							  ]
+							}
+							"""))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String inboundOrderId = objectMapper.readTree(createInboundOrderResult.getResponse().getContentAsString())
+				.path("data")
+				.path("id")
+				.asText();
+
+		mockMvc.perform(patch("/api/inbound-order/" + inboundOrderId + "/arrive")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk());
+
+		MvcResult putawayTaskResult = mockMvc.perform(get("/api/putaway-task/list")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String taskId = objectMapper.readTree(putawayTaskResult.getResponse().getContentAsString())
+				.path("data")
+				.path(0)
+				.path("id")
+				.asText();
+
+		mockMvc.perform(patch("/api/putaway-task/" + taskId + "/assign")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "zoneId": 1,
+							  "locationId": 1
+							}
+							"""))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(patch("/api/putaway-task/" + taskId + "/complete")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk());
+
+		MvcResult inboundRecordResult = mockMvc.perform(get("/api/inbound-record/list")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.param("orderCode", objectMapper.readTree(createInboundOrderResult.getResponse().getContentAsString())
+							.path("data")
+							.path("orderCode")
+							.asText()))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String inboundRecordId = objectMapper.readTree(inboundRecordResult.getResponse().getContentAsString())
+				.path("data")
+				.path(0)
+				.path("id")
+				.asText();
+
+		MvcResult productDetailResult = mockMvc.perform(get("/api/product-archive/1")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
+				.andExpect(status().isOk())
+				.andReturn();
+
+		JsonNode productDetail = objectMapper.readTree(productDetailResult.getResponse().getContentAsString()).path("data");
+
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/product-archive/1")
+					.header(HttpHeaders.AUTHORIZATION, bearerToken())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{
+							  "productName": "%s",
+							  "productSpecification": %s,
+							  "categoryId": %s,
+							  "unitId": %s,
+							  "originId": %s,
+							  "storageConditionId": %s,
+							  "shelfLifeDays": 9,
+							  "warningDays": 3,
+							  "qualityGradeId": %s,
+							  "status": %s,
+							  "sortOrder": %s,
+							  "remarks": %s
+							}
+							""".formatted(
+								escapeJson(productDetail.path("productName").asText()),
+								escapeNullableJson(productDetail.path("productSpecification").isNull()
+										? null
+										: productDetail.path("productSpecification").asText()),
+								productDetail.path("categoryId").asText(),
+								productDetail.path("unitId").asText(),
+								productDetail.path("originId").asText(),
+								productDetail.path("storageConditionId").asText(),
+								productDetail.path("qualityGradeId").asText(),
+								productDetail.path("status").asText(),
+								productDetail.path("sortOrder").asText(),
+								escapeNullableJson(productDetail.path("remarks").isNull()
+										? null
+										: productDetail.path("remarks").asText()))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.shelfLifeDays").value(9))
+				.andExpect(jsonPath("$.data.warningDays").value(3));
+
+		Integer shelfLifeDaysSnapshot = namedParameterJdbcTemplate.queryForObject("""
+				SELECT shelf_life_days_snapshot
+				FROM inventory_batch
+				WHERE source_type = 'INBOUND_RECORD'
+				  AND source_id = :sourceId
+				""", new MapSqlParameterSource("sourceId", inboundRecordId), Integer.class);
+		Integer warningDaysSnapshot = namedParameterJdbcTemplate.queryForObject("""
+				SELECT warning_days_snapshot
+				FROM inventory_batch
+				WHERE source_type = 'INBOUND_RECORD'
+				  AND source_id = :sourceId
+				""", new MapSqlParameterSource("sourceId", inboundRecordId), Integer.class);
+
+		org.junit.jupiter.api.Assertions.assertEquals(9, shelfLifeDaysSnapshot);
+		org.junit.jupiter.api.Assertions.assertEquals(3, warningDaysSnapshot);
+	}
+
+	@Test
 	void shouldDeleteProductArchive() throws Exception {
 		MvcResult createResult = mockMvc.perform(post("/api/product-archive")
 					.header(HttpHeaders.AUTHORIZATION, bearerToken())
@@ -148,5 +288,16 @@ class ProductArchiveControllerTests {
 
 		JsonNode jsonNode = objectMapper.readTree(mvcResult.getResponse().getContentAsString());
 		return "Bearer " + jsonNode.path("data").path("accessToken").asText();
+	}
+
+	private String escapeJson(String value) {
+		return value.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
+	private String escapeNullableJson(String value) {
+		if (value == null) {
+			return "null";
+		}
+		return "\"" + escapeJson(value) + "\"";
 	}
 }

@@ -12,6 +12,7 @@ import com.nongcang.server.modules.inboundrecord.domain.entity.InboundRecordEnti
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -36,6 +37,9 @@ public class InboundRecordRepository {
 			  pa.product_code,
 			  pa.product_name,
 			  ir.quantity,
+			  ir.shelf_life_days_snapshot,
+			  ir.warning_days_snapshot,
+			  ir.expected_expire_at,
 			  ir.occurred_at,
 			  ir.remarks,
 			  ir.created_at
@@ -69,6 +73,9 @@ public class InboundRecordRepository {
 					rs.getString("product_code"),
 					rs.getString("product_name"),
 					rs.getBigDecimal("quantity"),
+					rs.getObject("shelf_life_days_snapshot", Integer.class),
+					rs.getObject("warning_days_snapshot", Integer.class),
+					toLocalDateTime(rs.getTimestamp("expected_expire_at")),
 					toLocalDateTime(rs.getTimestamp("occurred_at")),
 					rs.getString("remarks"),
 					toLocalDateTime(rs.getTimestamp("created_at")));
@@ -103,7 +110,7 @@ public class InboundRecordRepository {
 		return count != null && count > 0;
 	}
 
-	public void insertRecord(
+	public long insertRecord(
 			String recordCode,
 			Long inboundOrderId,
 			Long putawayTaskId,
@@ -113,8 +120,12 @@ public class InboundRecordRepository {
 			Long locationId,
 			Long productId,
 			BigDecimal quantity,
+			Integer shelfLifeDaysSnapshot,
+			Integer warningDaysSnapshot,
+			LocalDateTime expectedExpireAt,
 			LocalDateTime occurredAt,
 			String remarks) {
+		GeneratedKeyHolder generatedKeyHolder = new GeneratedKeyHolder();
 		namedParameterJdbcTemplate.update("""
 				INSERT INTO inbound_record (
 				  record_code,
@@ -126,6 +137,9 @@ public class InboundRecordRepository {
 				  location_id,
 				  product_id,
 				  quantity,
+				  shelf_life_days_snapshot,
+				  warning_days_snapshot,
+				  expected_expire_at,
 				  occurred_at,
 				  remarks
 				)
@@ -139,6 +153,9 @@ public class InboundRecordRepository {
 				  :locationId,
 				  :productId,
 				  :quantity,
+				  :shelfLifeDaysSnapshot,
+				  :warningDaysSnapshot,
+				  :expectedExpireAt,
 				  :occurredAt,
 				  :remarks
 				)
@@ -152,8 +169,13 @@ public class InboundRecordRepository {
 				.addValue("locationId", locationId)
 				.addValue("productId", productId)
 				.addValue("quantity", quantity)
+				.addValue("shelfLifeDaysSnapshot", shelfLifeDaysSnapshot)
+				.addValue("warningDaysSnapshot", warningDaysSnapshot)
+				.addValue("expectedExpireAt", expectedExpireAt)
 				.addValue("occurredAt", occurredAt)
-				.addValue("remarks", remarks));
+				.addValue("remarks", remarks), generatedKeyHolder);
+		Number generatedId = generatedKeyHolder.getKey();
+		return generatedId == null ? 0L : generatedId.longValue();
 	}
 
 	public static Double toDouble(BigDecimal value) {

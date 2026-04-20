@@ -8,6 +8,8 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
+import com.nongcang.server.modules.inventorysupport.service.InventoryBatchService;
 import com.nongcang.server.modules.abnormalstock.domain.dto.AbnormalStockLossRequest;
 import com.nongcang.server.modules.abnormalstock.domain.dto.AbnormalStockListQueryRequest;
 import com.nongcang.server.modules.abnormalstock.domain.entity.AbnormalStockEntity;
@@ -32,25 +34,35 @@ public class AbnormalStockService {
 
 	private final AbnormalStockRepository abnormalStockRepository;
 	private final LossRecordService lossRecordService;
+	private final InventoryBatchService inventoryBatchService;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public AbnormalStockService(
 			AbnormalStockRepository abnormalStockRepository,
-			LossRecordService lossRecordService) {
+			LossRecordService lossRecordService,
+			InventoryBatchService inventoryBatchService,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.abnormalStockRepository = abnormalStockRepository;
 		this.lossRecordService = lossRecordService;
+		this.inventoryBatchService = inventoryBatchService;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<AbnormalStockListItemResponse> getAbnormalStockList(AbnormalStockListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return abnormalStockRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public List<AbnormalStockOptionResponse> getAbnormalStockOptions() {
+		Long scopedWarehouseId = warehouseAccessScopeService.currentWarehouseIdOrNull();
 		return abnormalStockRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> Objects.equals(entity.status(), STATUS_LOCKED))
 				.map(entity -> new AbnormalStockOptionResponse(
 						entity.id(),
@@ -61,12 +73,14 @@ public class AbnormalStockService {
 	}
 
 	public AbnormalStockDetailResponse getAbnormalStockDetail(Long id) {
-		return toDetailResponse(getExistingAbnormalStock(id));
+		AbnormalStockEntity abnormalStock = getExistingAbnormalStock(id);
+		warehouseAccessScopeService.assertWarehouseAccess(abnormalStock.warehouseId());
+		return toDetailResponse(abnormalStock);
 	}
 
 	@Transactional
 	public void createFromInspection(QualityInspectionDetailResponse inspectionDetail) {
-		abnormalStockRepository.insert(
+		long abnormalStockId = abnormalStockRepository.insert(
 				generateAbnormalCode(),
 				inspectionDetail.id(),
 				inspectionDetail.inspectionCode(),
@@ -78,11 +92,20 @@ public class AbnormalStockService {
 				STATUS_LOCKED,
 				inspectionDetail.resultStatusLabel(),
 				inspectionDetail.remarks());
+		inventoryBatchService.lockForInspection(
+				abnormalStockId,
+				inspectionDetail.sourceType(),
+				inspectionDetail.sourceId(),
+				inspectionDetail.productId(),
+				inspectionDetail.warehouseId(),
+				inspectionDetail.locationId(),
+				java.math.BigDecimal.valueOf(inspectionDetail.unqualifiedQuantity()));
 	}
 
 	@Transactional
 	public void release(Long id) {
 		AbnormalStockEntity abnormalStock = getExistingAbnormalStock(id);
+		warehouseAccessScopeService.assertWarehouseAccess(abnormalStock.warehouseId());
 
 		if (!Objects.equals(abnormalStock.status(), STATUS_LOCKED)) {
 			throw new BusinessException(CommonErrorCode.ABNORMAL_STOCK_STATUS_INVALID);
@@ -94,6 +117,7 @@ public class AbnormalStockService {
 	@Transactional
 	public void disposeToLoss(Long id, AbnormalStockLossRequest request) {
 		AbnormalStockEntity abnormalStock = getExistingAbnormalStock(id);
+		warehouseAccessScopeService.assertWarehouseAccess(abnormalStock.warehouseId());
 
 		if (!Objects.equals(abnormalStock.status(), STATUS_LOCKED)) {
 			throw new BusinessException(CommonErrorCode.ABNORMAL_STOCK_STATUS_INVALID);

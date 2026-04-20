@@ -156,6 +156,19 @@ function InventoryStockPage() {
       ),
     },
     {
+      key: 'nearestExpireAt',
+      title: '最近到期',
+      minWidth: 170,
+      render: (row) => (row.nearestExpireAt ? formatDateTime(row.nearestExpireAt) : '-'),
+    },
+    {
+      key: 'remainingShelfLifeDays',
+      title: '剩余天数',
+      minWidth: 110,
+      render: (row) =>
+        row.remainingShelfLifeDays == null ? '-' : `${row.remainingShelfLifeDays} 天`,
+    },
+    {
       key: 'updatedAt',
       title: '更新时间',
       minWidth: 170,

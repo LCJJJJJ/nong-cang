@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +30,20 @@ class LossRecordControllerTests {
 	@Autowired
 	private ObjectMapper objectMapper;
 
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
 	@Test
 	void shouldCreateDirectLossRecord() throws Exception {
+		Double beforeRemainingQuantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(remaining_quantity), 0)
+				FROM inventory_batch
+				WHERE product_id = 1
+				  AND warehouse_id = 1
+				  AND location_id = 1
+				  AND status = 'ACTIVE'
+				""", new MapSqlParameterSource(), Double.class);
+
 		mockMvc.perform(post("/api/loss-record/direct")
 					.header("Authorization", bearerToken())
 					.contentType(MediaType.APPLICATION_JSON)
@@ -48,6 +62,16 @@ class LossRecordControllerTests {
 				.andExpect(jsonPath("$.data.lossCode").value(Matchers.startsWith("LOSS-")))
 				.andExpect(jsonPath("$.data.sourceType").value("DIRECT"))
 				.andExpect(jsonPath("$.data.quantity").value(1.5));
+
+		Double afterRemainingQuantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(remaining_quantity), 0)
+				FROM inventory_batch
+				WHERE product_id = 1
+				  AND warehouse_id = 1
+				  AND location_id = 1
+				  AND status = 'ACTIVE'
+				""", new MapSqlParameterSource(), Double.class);
+		org.junit.jupiter.api.Assertions.assertEquals(beforeRemainingQuantity - 1.5D, afterRemainingQuantity);
 	}
 
 	@Test

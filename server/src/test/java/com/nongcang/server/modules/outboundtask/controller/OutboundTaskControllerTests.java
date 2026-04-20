@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,9 @@ class OutboundTaskControllerTests {
 
 	@Autowired
 	private ObjectMapper objectMapper;
+
+	@Autowired
+	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	@Test
 	void shouldReturnOutboundTaskList() throws Exception {
@@ -53,6 +58,15 @@ class OutboundTaskControllerTests {
 
 	@Test
 	void shouldAssignPickAndCompleteOutboundTask() throws Exception {
+		Double beforeRemainingQuantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(remaining_quantity), 0)
+				FROM inventory_batch
+				WHERE product_id = 3
+				  AND warehouse_id = 2
+				  AND location_id = 2
+				  AND status = 'ACTIVE'
+				""", new MapSqlParameterSource(), Double.class);
+
 		MvcResult createResult = mockMvc.perform(post("/api/outbound-order")
 					.header(HttpHeaders.AUTHORIZATION, bearerToken())
 					.contentType(MediaType.APPLICATION_JSON)
@@ -115,6 +129,23 @@ class OutboundTaskControllerTests {
 					.header(HttpHeaders.AUTHORIZATION, bearerToken()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.message").value("出库完成"));
+
+		Double afterRemainingQuantity = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COALESCE(SUM(remaining_quantity), 0)
+				FROM inventory_batch
+				WHERE product_id = 3
+				  AND warehouse_id = 2
+				  AND location_id = 2
+				  AND status = 'ACTIVE'
+				""", new MapSqlParameterSource(), Double.class);
+		Integer allocationCount = namedParameterJdbcTemplate.queryForObject("""
+				SELECT COUNT(1)
+				FROM outbound_task_batch_allocation
+				WHERE outbound_task_id = :outboundTaskId
+				""", new MapSqlParameterSource("outboundTaskId", taskId), Integer.class);
+
+		org.junit.jupiter.api.Assertions.assertEquals(beforeRemainingQuantity - 6D, afterRemainingQuantity);
+		org.junit.jupiter.api.Assertions.assertEquals(1, allocationCount);
 	}
 
 	@Test

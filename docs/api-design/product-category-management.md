@@ -19,8 +19,6 @@
 - `sort_order`：排序值
 - `status`：`1` 启用，`0` 停用
 - `default_storage_condition_id`：默认储存条件ID，关联 `storage_condition.id`
-- `shelf_life_days`：保质期基准天数
-- `warning_days`：预警提前天数
 - `remarks`：备注
 - `created_at` / `updated_at`
 
@@ -33,6 +31,7 @@
 - 删除分类前必须校验“是否存在子分类”
 - 当前版本不允许删除存在子分类的分类
 - 停用分类后不影响历史数据，但不建议继续挂载新产品
+- 保质期和预警天数不在分类中维护，只允许在产品档案中维护
 
 ## 统一响应约定
 
@@ -79,8 +78,6 @@
     "defaultStorageConditionId": null,
     "defaultStorageType": null,
     "defaultStorageCondition": null,
-    "shelfLifeDays": null,
-    "warningDays": 2,
     "remarks": "蔬菜大类",
     "createdAt": "2026-04-19T10:00:00+08:00",
     "updatedAt": "2026-04-19T10:00:00+08:00",
@@ -135,9 +132,7 @@
   "defaultStorageConditionId": "1",
   "defaultStorageType": "冷藏",
   "defaultStorageCondition": "叶菜冷藏标准",
-  "shelfLifeDays": 5,
-  "warningDays": 1,
-  "remarks": "叶菜默认规则",
+  "remarks": "叶菜默认储存规则",
   "createdAt": "2026-04-19T10:00:00+08:00",
   "updatedAt": "2026-04-19T10:00:00+08:00"
 }
@@ -156,8 +151,6 @@
   "sortOrder": 30,
   "status": 1,
   "defaultStorageConditionId": 2,
-  "shelfLifeDays": 180,
-  "warningDays": 15,
   "remarks": "首版新分类"
 }
 ```
@@ -183,9 +176,7 @@
   "sortOrder": 1,
   "status": 1,
   "defaultStorageConditionId": 1,
-  "shelfLifeDays": 5,
-  "warningDays": 1,
-  "remarks": "叶菜默认规则"
+  "remarks": "叶菜默认储存规则"
 }
 ```
 
@@ -214,7 +205,7 @@
 删除前置校验：
 
 - 如果存在子分类，返回业务错误
-- 当前版本未接产品档案引用校验，后续接入产品主数据后应增加引用检查
+- 如果存在产品档案引用，返回业务错误
 
 ## 常见业务错误
 
@@ -225,6 +216,7 @@
 - `CATEGORY_PARENT_INVALID`：不能选择自己或自己的下级分类作为父分类
 - `CATEGORY_LEVEL_EXCEEDED`：分类层级超过当前系统限制
 - `CATEGORY_HAS_CHILDREN`：当前分类下存在子分类，不能删除
+- `CATEGORY_IN_USE`：当前分类已被产品档案引用，不能删除
 
 ## 前端联调建议
 

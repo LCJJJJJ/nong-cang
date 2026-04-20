@@ -94,8 +94,6 @@ public class CategoryService {
 				resolveStorageConditionId(request.defaultStorageConditionId()),
 				null,
 				null,
-				request.shelfLifeDays(),
-				request.warningDays(),
 				trimToNull(request.remarks()),
 				null,
 				null);
@@ -128,8 +126,6 @@ public class CategoryService {
 				resolveStorageConditionId(request.defaultStorageConditionId()),
 				null,
 				null,
-				request.shelfLifeDays(),
-				request.warningDays(),
 				trimToNull(request.remarks()),
 				currentCategory.createdAt(),
 				currentCategory.updatedAt());
@@ -251,8 +247,6 @@ public class CategoryService {
 				categoryEntity.defaultStorageConditionId(),
 				categoryEntity.defaultStorageType(),
 				categoryEntity.defaultStorageCondition(),
-				categoryEntity.shelfLifeDays(),
-				categoryEntity.warningDays(),
 				categoryEntity.remarks(),
 				toIsoDateTime(categoryEntity.createdAt()),
 				toIsoDateTime(categoryEntity.updatedAt()),
@@ -349,8 +343,6 @@ public class CategoryService {
 				categoryEntity.defaultStorageConditionId(),
 				categoryEntity.defaultStorageType(),
 				categoryEntity.defaultStorageCondition(),
-				categoryEntity.shelfLifeDays(),
-				categoryEntity.warningDays(),
 				categoryEntity.remarks(),
 				toIsoDateTime(categoryEntity.createdAt()),
 				toIsoDateTime(categoryEntity.updatedAt()));

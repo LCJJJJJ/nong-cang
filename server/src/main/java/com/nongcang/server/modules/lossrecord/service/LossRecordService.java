@@ -7,8 +7,10 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.common.validation.QuantityPrecisionValidator;
 import com.nongcang.server.modules.abnormalstock.domain.entity.AbnormalStockEntity;
+import com.nongcang.server.modules.inventorysupport.service.InventoryBatchService;
 import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryLocationStockEntity;
 import com.nongcang.server.modules.inventorysupport.repository.InventoryStockRepository;
 import com.nongcang.server.modules.inventorysupport.repository.InventoryTransactionRepository;
@@ -40,6 +42,8 @@ public class LossRecordService {
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final QuantityPrecisionValidator quantityPrecisionValidator;
+	private final InventoryBatchService inventoryBatchService;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public LossRecordService(
 			LossRecordRepository lossRecordRepository,
@@ -48,7 +52,9 @@ public class LossRecordService {
 			ProductArchiveRepository productArchiveRepository,
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
-			QuantityPrecisionValidator quantityPrecisionValidator) {
+			QuantityPrecisionValidator quantityPrecisionValidator,
+			InventoryBatchService inventoryBatchService,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.lossRecordRepository = lossRecordRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
 		this.inventoryTransactionRepository = inventoryTransactionRepository;
@@ -56,11 +62,15 @@ public class LossRecordService {
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.quantityPrecisionValidator = quantityPrecisionValidator;
+		this.inventoryBatchService = inventoryBatchService;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<LossRecordListItemResponse> getLossRecordList(LossRecordListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return lossRecordRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
@@ -68,6 +78,7 @@ public class LossRecordService {
 
 	@Transactional
 	public LossRecordDetailResponse createFromAbnormalStock(AbnormalStockEntity abnormalStock, String lossReason, String remarks) {
+		inventoryBatchService.consumeAbnormalStockLocks(abnormalStock.id());
 		boolean decreased = inventoryStockRepository.decreaseStock(
 				abnormalStock.productId(),
 				abnormalStock.warehouseId(),
@@ -111,14 +122,15 @@ public class LossRecordService {
 		if (request.quantity() == null || request.quantity().compareTo(java.math.BigDecimal.ZERO) <= 0) {
 			throw new BusinessException(CommonErrorCode.LOSS_RECORD_QUANTITY_INVALID);
 		}
+		Long warehouseId = warehouseAccessScopeService.resolveRequiredWarehouseId(request.warehouseId());
 
 		WarehouseZoneEntity zone = warehouseZoneRepository.findById(request.zoneId())
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.WAREHOUSE_ZONE_NOT_FOUND));
 		WarehouseLocationEntity location = warehouseLocationRepository.findById(request.locationId())
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
 
-		if (!Objects.equals(zone.warehouseId(), request.warehouseId())
-				|| !Objects.equals(location.warehouseId(), request.warehouseId())
+		if (!Objects.equals(zone.warehouseId(), warehouseId)
+				|| !Objects.equals(location.warehouseId(), warehouseId)
 				|| !Objects.equals(location.zoneId(), zone.id())) {
 			throw new BusinessException(CommonErrorCode.WAREHOUSE_LOCATION_ZONE_MISMATCH);
 		}
@@ -129,7 +141,7 @@ public class LossRecordService {
 
 		InventoryLocationStockEntity stockOption = inventoryStockRepository.findAvailableStocks(
 				request.productId(),
-				request.warehouseId(),
+				warehouseId,
 				null)
 				.stream()
 				.filter(option -> Objects.equals(option.locationId(), request.locationId()))
@@ -140,9 +152,14 @@ public class LossRecordService {
 			throw new BusinessException(CommonErrorCode.LOSS_RECORD_STOCK_INSUFFICIENT);
 		}
 
+		inventoryBatchService.consumeDirectLoss(
+				request.productId(),
+				warehouseId,
+				request.locationId(),
+				request.quantity());
 		boolean decreased = inventoryStockRepository.decreaseStock(
 				request.productId(),
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				request.locationId(),
 				request.quantity());
@@ -156,7 +173,7 @@ public class LossRecordService {
 				"DIRECT",
 				null,
 				request.productId(),
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				request.locationId(),
 				request.quantity(),
@@ -167,7 +184,7 @@ public class LossRecordService {
 				generateTransactionCode(),
 				"LOSS",
 				request.productId(),
-				request.warehouseId(),
+				warehouseId,
 				request.zoneId(),
 				request.locationId(),
 				request.quantity().negate(),
@@ -204,6 +221,7 @@ public class LossRecordService {
 				.filter(record -> Objects.equals(record.id(), id))
 				.findFirst()
 				.orElseThrow(() -> new BusinessException(CommonErrorCode.LOSS_RECORD_NOT_FOUND));
+		warehouseAccessScopeService.assertWarehouseAccess(entity.warehouseId());
 		return toDetailResponse(entity);
 	}
 

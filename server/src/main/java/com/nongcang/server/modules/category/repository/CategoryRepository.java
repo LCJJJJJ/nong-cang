@@ -30,8 +30,6 @@ public class CategoryRepository {
 			  pc.default_storage_condition_id,
 			  sc.storage_type AS default_storage_type,
 			  sc.condition_name AS default_storage_condition,
-			  pc.shelf_life_days,
-			  pc.warning_days,
 			  pc.remarks,
 			  pc.created_at,
 			  pc.updated_at
@@ -55,8 +53,6 @@ public class CategoryRepository {
 					rs.getObject("default_storage_condition_id", Long.class),
 					rs.getString("default_storage_type"),
 					rs.getString("default_storage_condition"),
-					rs.getObject("shelf_life_days", Integer.class),
-					rs.getObject("warning_days", Integer.class),
 					rs.getString("remarks"),
 					toLocalDateTime(rs.getTimestamp("created_at")),
 					toLocalDateTime(rs.getTimestamp("updated_at")));
@@ -142,8 +138,6 @@ public class CategoryRepository {
 				  sort_order,
 				  status,
 				  default_storage_condition_id,
-				  shelf_life_days,
-				  warning_days,
 				  remarks
 				)
 				VALUES (
@@ -155,8 +149,6 @@ public class CategoryRepository {
 				  :sortOrder,
 				  :status,
 				  :defaultStorageConditionId,
-				  :shelfLifeDays,
-				  :warningDays,
 				  :remarks
 				)
 				""", buildParameterSource(categoryEntity), generatedKeyHolder);
@@ -176,8 +168,6 @@ public class CategoryRepository {
 				    sort_order = :sortOrder,
 				    status = :status,
 				    default_storage_condition_id = :defaultStorageConditionId,
-				    shelf_life_days = :shelfLifeDays,
-				    warning_days = :warningDays,
 				    remarks = :remarks
 				WHERE id = :id
 				""", buildParameterSource(categoryEntity).addValue("id", categoryEntity.id()));
@@ -243,8 +233,6 @@ public class CategoryRepository {
 				.addValue("sortOrder", categoryEntity.sortOrder())
 				.addValue("status", categoryEntity.status())
 				.addValue("defaultStorageConditionId", categoryEntity.defaultStorageConditionId())
-				.addValue("shelfLifeDays", categoryEntity.shelfLifeDays())
-				.addValue("warningDays", categoryEntity.warningDays())
 				.addValue("remarks", categoryEntity.remarks());
 	}
 

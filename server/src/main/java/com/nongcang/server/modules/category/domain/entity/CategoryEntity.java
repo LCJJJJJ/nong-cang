@@ -14,8 +14,6 @@ public record CategoryEntity(
 		Long defaultStorageConditionId,
 		String defaultStorageType,
 		String defaultStorageCondition,
-		Integer shelfLifeDays,
-		Integer warningDays,
 		String remarks,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt) {

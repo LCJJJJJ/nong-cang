@@ -14,8 +14,6 @@ public record CategoryDetailResponse(
 		Long defaultStorageConditionId,
 		String defaultStorageType,
 		String defaultStorageCondition,
-		Integer shelfLifeDays,
-		Integer warningDays,
 		String remarks,
 		String createdAt,
 		String updatedAt) {

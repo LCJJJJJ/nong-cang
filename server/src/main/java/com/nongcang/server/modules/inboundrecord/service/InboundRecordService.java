@@ -6,10 +6,13 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.inboundrecord.domain.dto.InboundRecordListQueryRequest;
 import com.nongcang.server.modules.inboundrecord.domain.entity.InboundRecordEntity;
 import com.nongcang.server.modules.inboundrecord.domain.vo.InboundRecordListItemResponse;
 import com.nongcang.server.modules.inboundrecord.repository.InboundRecordRepository;
+import com.nongcang.server.modules.productarchive.domain.entity.ProductArchiveEntity;
+import com.nongcang.server.modules.productarchive.repository.ProductArchiveRepository;
 import com.nongcang.server.modules.putawaytask.domain.entity.PutawayTaskEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,22 +25,34 @@ public class InboundRecordService {
 			DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
 	private final InboundRecordRepository inboundRecordRepository;
+	private final ProductArchiveRepository productArchiveRepository;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
-	public InboundRecordService(InboundRecordRepository inboundRecordRepository) {
+	public InboundRecordService(
+			InboundRecordRepository inboundRecordRepository,
+			ProductArchiveRepository productArchiveRepository,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.inboundRecordRepository = inboundRecordRepository;
+		this.productArchiveRepository = productArchiveRepository;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<InboundRecordListItemResponse> getInboundRecordList(InboundRecordListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return inboundRecordRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || entity.warehouseId().equals(scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	@Transactional
-	public void createRecord(PutawayTaskEntity task) {
-		inboundRecordRepository.insertRecord(
+	public InboundRecordEntity createRecord(PutawayTaskEntity task) {
+		ProductArchiveEntity productArchive = productArchiveRepository.findById(task.productId())
+				.orElseThrow();
+		LocalDateTime occurredAt = task.completedAt() == null ? LocalDateTime.now() : task.completedAt();
+		long inboundRecordId = inboundRecordRepository.insertRecord(
 				generateRecordCode(),
 				task.inboundOrderId(),
 				task.id(),
@@ -47,8 +62,13 @@ public class InboundRecordService {
 				task.locationId(),
 				task.productId(),
 				task.quantity(),
-				task.completedAt() == null ? LocalDateTime.now() : task.completedAt(),
+				productArchive.shelfLifeDays(),
+				productArchive.warningDays(),
+				occurredAt.plusDays(productArchive.shelfLifeDays()),
+				occurredAt,
 				task.remarks());
+		return inboundRecordRepository.findById(inboundRecordId)
+				.orElseThrow();
 	}
 
 	private boolean matchesQuery(InboundRecordEntity entity, InboundRecordListQueryRequest queryRequest) {
@@ -108,6 +128,9 @@ public class InboundRecordService {
 				entity.productCode(),
 				entity.productName(),
 				InboundRecordRepository.toDouble(entity.quantity()),
+				entity.shelfLifeDaysSnapshot(),
+				entity.warningDaysSnapshot(),
+				toIsoDateTime(entity.expectedExpireAt()),
 				toIsoDateTime(entity.occurredAt()),
 				entity.remarks(),
 				toIsoDateTime(entity.createdAt()));

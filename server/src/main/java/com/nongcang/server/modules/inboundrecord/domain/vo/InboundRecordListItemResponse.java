@@ -18,6 +18,9 @@ public record InboundRecordListItemResponse(
 		String productCode,
 		String productName,
 		Double quantity,
+		Integer shelfLifeDaysSnapshot,
+		Integer warningDaysSnapshot,
+		String expectedExpireAt,
 		String occurredAt,
 		String remarks,
 		String createdAt) {

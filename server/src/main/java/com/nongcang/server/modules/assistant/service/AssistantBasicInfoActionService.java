@@ -361,8 +361,6 @@ public class AssistantBasicInfoActionService {
 				case "name", "分类名称", "新名称", "新分类名称" -> "categoryName";
 				case "parent", "parentCategory", "上级分类" -> "parentId";
 				case "defaultStorageCondition", "储存条件", "默认储存条件" -> "defaultStorageConditionId";
-				case "保质期天数" -> "shelfLifeDays";
-				case "预警天数" -> "warningDays";
 				case "排序" -> "sortOrder";
 				case "状态" -> "status";
 				case "remark" -> "remarks";
@@ -482,8 +480,6 @@ public class AssistantBasicInfoActionService {
 		fields.putIfAbsent("sortOrder", current.sortOrder());
 		fields.putIfAbsent("status", current.status());
 		fields.putIfAbsent("defaultStorageConditionId", current.defaultStorageConditionId());
-		fields.putIfAbsent("shelfLifeDays", current.shelfLifeDays());
-		fields.putIfAbsent("warningDays", current.warningDays());
 		fields.putIfAbsent("remarks", current.remarks());
 		return fields;
 	}
@@ -733,8 +729,6 @@ public class AssistantBasicInfoActionService {
 						intValue(fields, "sortOrder"),
 						intValue(fields, "status"),
 						longValue(fields, "defaultStorageConditionId"),
-						nullableInteger(fields, "shelfLifeDays"),
-						nullableInteger(fields, "warningDays"),
 						nullableString(fields, "remarks")));
 				yield "已新增产品分类：" + stringValue(fields, "categoryName");
 			}
@@ -745,8 +739,6 @@ public class AssistantBasicInfoActionService {
 						intValue(fields, "sortOrder"),
 						intValue(fields, "status"),
 						longValue(fields, "defaultStorageConditionId"),
-						nullableInteger(fields, "shelfLifeDays"),
-						nullableInteger(fields, "warningDays"),
 						nullableString(fields, "remarks")));
 				yield "已更新产品分类：" + plan.targetLabel();
 			}

@@ -9,6 +9,7 @@ import java.util.Objects;
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
 import com.nongcang.server.modules.category.repository.CategoryRepository;
+import com.nongcang.server.modules.inventorysupport.service.InventoryBatchService;
 import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveCreateRequest;
 import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveListQueryRequest;
 import com.nongcang.server.modules.productarchive.domain.dto.ProductArchiveStatusUpdateRequest;
@@ -40,6 +41,7 @@ public class ProductArchiveService {
 	private final ProductOriginRepository productOriginRepository;
 	private final StorageConditionRepository storageConditionRepository;
 	private final QualityGradeRepository qualityGradeRepository;
+	private final InventoryBatchService inventoryBatchService;
 
 	public ProductArchiveService(
 			ProductArchiveRepository productArchiveRepository,
@@ -47,13 +49,15 @@ public class ProductArchiveService {
 			ProductUnitRepository productUnitRepository,
 			ProductOriginRepository productOriginRepository,
 			StorageConditionRepository storageConditionRepository,
-			QualityGradeRepository qualityGradeRepository) {
+			QualityGradeRepository qualityGradeRepository,
+			InventoryBatchService inventoryBatchService) {
 		this.productArchiveRepository = productArchiveRepository;
 		this.categoryRepository = categoryRepository;
 		this.productUnitRepository = productUnitRepository;
 		this.productOriginRepository = productOriginRepository;
 		this.storageConditionRepository = storageConditionRepository;
 		this.qualityGradeRepository = qualityGradeRepository;
+		this.inventoryBatchService = inventoryBatchService;
 	}
 
 	public List<ProductArchiveListItemResponse> getProductArchiveList(ProductArchiveListQueryRequest queryRequest) {
@@ -149,6 +153,13 @@ public class ProductArchiveService {
 				currentProductArchive.updatedAt());
 
 		productArchiveRepository.update(updatedProductArchive);
+		if (!Objects.equals(currentProductArchive.shelfLifeDays(), request.shelfLifeDays())
+				|| !Objects.equals(currentProductArchive.warningDays(), request.warningDays())) {
+			inventoryBatchService.recalculateActiveBatchesForProduct(
+					id,
+					request.shelfLifeDays(),
+					request.warningDays());
+		}
 		return getProductArchiveDetail(id);
 	}
 

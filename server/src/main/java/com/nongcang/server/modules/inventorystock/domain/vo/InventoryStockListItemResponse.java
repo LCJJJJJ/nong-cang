@@ -19,5 +19,7 @@ public record InventoryStockListItemResponse(
 		Double reservedQuantity,
 		Double lockedQuantity,
 		Double availableQuantity,
+		String nearestExpireAt,
+		Integer remainingShelfLifeDays,
 		String updatedAt) {
 }

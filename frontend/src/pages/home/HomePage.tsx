@@ -37,8 +37,6 @@ interface CategoryFormState {
   sortOrder: string
   status: string
   defaultStorageConditionId: string
-  shelfLifeDays: string
-  warningDays: string
   remarks: string
 }
 
@@ -49,8 +47,6 @@ const initialFormState: CategoryFormState = {
   sortOrder: '0',
   status: '1',
   defaultStorageConditionId: '',
-  shelfLifeDays: '',
-  warningDays: '',
   remarks: '',
 }
 
@@ -309,12 +305,6 @@ function HomePage() {
       render: (row) => joinStorageLabel(row),
     },
     {
-      key: 'shelfLife',
-      title: '保质期基准',
-      minWidth: 150,
-      render: (row) => (row.shelfLifeDays ? `${row.shelfLifeDays} 天` : '-'),
-    },
-    {
       key: 'status',
       title: '状态',
       minWidth: 120,
@@ -481,7 +471,7 @@ function HomePage() {
             <div className="category-page__dialog-header">
               <div>
                 <h3>{dialogMode === 'create' ? '新增分类' : '编辑分类'}</h3>
-                <p>维护分类树节点与默认规则。</p>
+                <p>维护分类树节点与默认储存规则。</p>
               </div>
               <button
                 type="button"
@@ -611,34 +601,6 @@ function HomePage() {
                 </small>
               </label>
 
-              <label className="category-page__field">
-                <span>保质期基准（天）</span>
-                <input
-                  type="number"
-                  value={formState.shelfLifeDays}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      shelfLifeDays: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="category-page__field">
-                <span>预警提前天数</span>
-                <input
-                  type="number"
-                  value={formState.warningDays}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      warningDays: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
               <label className="category-page__field category-page__field--full">
                 <span>备注</span>
                 <textarea
@@ -734,8 +696,6 @@ function mapDetailToFormState(detail: CategoryDetail): CategoryFormState {
     sortOrder: String(detail.sortOrder),
     status: String(detail.status),
     defaultStorageConditionId: detail.defaultStorageConditionId ?? '',
-    shelfLifeDays: detail.shelfLifeDays ? String(detail.shelfLifeDays) : '',
-    warningDays: detail.warningDays != null ? String(detail.warningDays) : '',
     remarks: detail.remarks ?? '',
   }
 }
@@ -749,8 +709,6 @@ function mapFormStateToPayload(formState: CategoryFormState): CategoryFormPayloa
     defaultStorageConditionId: formState.defaultStorageConditionId
       ? Number(formState.defaultStorageConditionId)
       : null,
-    shelfLifeDays: formState.shelfLifeDays ? Number(formState.shelfLifeDays) : null,
-    warningDays: formState.warningDays ? Number(formState.warningDays) : null,
     remarks: formState.remarks.trim() || null,
   }
 }

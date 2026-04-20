@@ -37,7 +37,9 @@ class InventoryStockControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.data[0].productCode").isNotEmpty())
-				.andExpect(jsonPath("$.data[0].stockQuantity").isNumber());
+				.andExpect(jsonPath("$.data[0].stockQuantity").isNumber())
+				.andExpect(jsonPath("$.data[0].nearestExpireAt").isNotEmpty())
+				.andExpect(jsonPath("$.data[0].remainingShelfLifeDays").isNumber());
 	}
 
 	@Test

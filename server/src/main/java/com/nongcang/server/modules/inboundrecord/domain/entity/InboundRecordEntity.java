@@ -21,6 +21,9 @@ public record InboundRecordEntity(
 		String productCode,
 		String productName,
 		BigDecimal quantity,
+		Integer shelfLifeDaysSnapshot,
+		Integer warningDaysSnapshot,
+		LocalDateTime expectedExpireAt,
 		LocalDateTime occurredAt,
 		String remarks,
 		LocalDateTime createdAt) {

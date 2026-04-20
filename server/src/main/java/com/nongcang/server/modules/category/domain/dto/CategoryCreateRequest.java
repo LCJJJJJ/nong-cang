@@ -18,10 +18,6 @@ public record CategoryCreateRequest(
 		@Max(value = 1, message = "状态值不正确")
 		Integer status,
 		Long defaultStorageConditionId,
-		@Min(value = 1, message = "保质期基准必须大于0")
-		Integer shelfLifeDays,
-		@Min(value = 0, message = "预警提前天数不能小于0")
-		Integer warningDays,
 		@Size(max = 255, message = "备注长度不能超过255个字符")
 		String remarks) {
 }

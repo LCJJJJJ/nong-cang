@@ -14,8 +14,6 @@ CREATE TABLE IF NOT EXISTS `product_category` (
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序值',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：1启用，0停用',
   `default_storage_condition_id` BIGINT DEFAULT NULL COMMENT '默认储存条件ID',
-  `shelf_life_days` INT DEFAULT NULL COMMENT '保质期基准天数',
-  `warning_days` INT DEFAULT NULL COMMENT '预警提前天数',
   `remarks` VARCHAR(255) DEFAULT NULL COMMENT '备注',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -37,8 +35,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -50,8 +46,6 @@ SELECT
   10,
   1,
   NULL,
-  NULL,
-  2,
   '蔬菜大类'
 FROM DUAL
 WHERE NOT EXISTS (
@@ -67,8 +61,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -85,9 +77,7 @@ SELECT
     WHERE sc.`condition_name` = '叶菜冷藏标准'
     LIMIT 1
   ),
-  5,
-  1,
-  '叶菜默认规则'
+  '叶菜默认储存规则'
 FROM `product_category` parent
 WHERE parent.`category_code` = 'CAT-A00'
   AND NOT EXISTS (
@@ -103,8 +93,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -121,8 +109,6 @@ SELECT
     WHERE sc.`condition_name` = '叶菜冷藏标准'
     LIMIT 1
   ),
-  4,
-  1,
   '菠菜细分类'
 FROM `product_category` parent
 WHERE parent.`category_code` = 'CAT-A01'
@@ -139,8 +125,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -157,8 +141,6 @@ SELECT
     WHERE sc.`condition_name` = '叶菜冷藏标准'
     LIMIT 1
   ),
-  3,
-  1,
   '生菜细分类'
 FROM `product_category` parent
 WHERE parent.`category_code` = 'CAT-A01'
@@ -175,8 +157,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -193,9 +173,7 @@ SELECT
     WHERE sc.`condition_name` = '根茎阴凉干燥标准'
     LIMIT 1
   ),
-  15,
-  3,
-  '根茎类默认规则'
+  '根茎类默认储存规则'
 FROM `product_category` parent
 WHERE parent.`category_code` = 'CAT-A00'
   AND NOT EXISTS (
@@ -211,8 +189,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -224,8 +200,6 @@ SELECT
   20,
   1,
   NULL,
-  NULL,
-  2,
   '水果大类'
 FROM DUAL
 WHERE NOT EXISTS (
@@ -241,8 +215,6 @@ INSERT INTO `product_category` (
   `sort_order`,
   `status`,
   `default_storage_condition_id`,
-  `shelf_life_days`,
-  `warning_days`,
   `remarks`
 )
 SELECT
@@ -259,9 +231,7 @@ SELECT
     WHERE sc.`condition_name` = '水果冷藏标准'
     LIMIT 1
   ),
-  12,
-  2,
-  '柑橘类默认规则'
+  '柑橘类默认储存规则'
 FROM `product_category` parent
 WHERE parent.`category_code` = 'CAT-B00'
   AND NOT EXISTS (

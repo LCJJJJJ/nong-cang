@@ -11,8 +11,6 @@ export interface CategoryTreeItem {
   defaultStorageConditionId: string | null
   defaultStorageType: string | null
   defaultStorageCondition: string | null
-  shelfLifeDays: number | null
-  warningDays: number | null
   remarks: string | null
   createdAt: string
   updatedAt: string
@@ -41,8 +39,6 @@ export interface CategoryDetail {
   defaultStorageConditionId: string | null
   defaultStorageType: string | null
   defaultStorageCondition: string | null
-  shelfLifeDays: number | null
-  warningDays: number | null
   remarks: string | null
   createdAt: string
   updatedAt: string
@@ -62,7 +58,5 @@ export interface CategoryFormPayload {
   sortOrder: number
   status: number
   defaultStorageConditionId: number | null
-  shelfLifeDays: number | null
-  warningDays: number | null
   remarks: string | null
 }

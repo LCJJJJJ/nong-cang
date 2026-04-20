@@ -9,8 +9,10 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
 import com.nongcang.server.modules.inventorysupport.domain.entity.InventoryLocationStockEntity;
 import com.nongcang.server.modules.inventorysupport.repository.InventoryStockRepository;
+import com.nongcang.server.modules.inventorysupport.service.InventoryBatchService;
 import com.nongcang.server.modules.inventorysupport.service.InventoryStockService;
 import com.nongcang.server.modules.outboundorder.domain.entity.OutboundOrderEntity;
 import com.nongcang.server.modules.outboundorder.domain.entity.OutboundOrderItemEntity;
@@ -53,8 +55,10 @@ public class OutboundTaskService {
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final InventoryStockRepository inventoryStockRepository;
+	private final InventoryBatchService inventoryBatchService;
 	private final InventoryStockService inventoryStockService;
 	private final OutboundRecordService outboundRecordService;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public OutboundTaskService(
 			OutboundTaskRepository outboundTaskRepository,
@@ -62,31 +66,40 @@ public class OutboundTaskService {
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
 			InventoryStockRepository inventoryStockRepository,
+			InventoryBatchService inventoryBatchService,
 			InventoryStockService inventoryStockService,
-			OutboundRecordService outboundRecordService) {
+			OutboundRecordService outboundRecordService,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.outboundTaskRepository = outboundTaskRepository;
 		this.outboundOrderRepository = outboundOrderRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.inventoryStockRepository = inventoryStockRepository;
+		this.inventoryBatchService = inventoryBatchService;
 		this.inventoryStockService = inventoryStockService;
 		this.outboundRecordService = outboundRecordService;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<OutboundTaskListItemResponse> getOutboundTaskList(OutboundTaskListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return outboundTaskRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public OutboundTaskDetailResponse getOutboundTaskDetail(Long id) {
-		return toDetailResponse(getExistingTask(id));
+		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
+		return toDetailResponse(task);
 	}
 
 	public List<OutboundTaskStockOptionResponse> getStockOptions(Long id) {
 		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 		return inventoryStockRepository.findAvailableStocks(task.productId(), task.warehouseId(), task.id())
 				.stream()
 				.map(this::toStockOptionResponse)
@@ -132,6 +145,7 @@ public class OutboundTaskService {
 	@Transactional
 	public OutboundTaskDetailResponse assignStock(Long id, OutboundAssignRequest request) {
 		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 		ensureAssignable(task.status());
 
 		WarehouseZoneEntity zone = warehouseZoneRepository.findById(request.zoneId())
@@ -157,6 +171,7 @@ public class OutboundTaskService {
 			throw new BusinessException(CommonErrorCode.OUTBOUND_TASK_STOCK_INSUFFICIENT);
 		}
 
+		inventoryBatchService.replaceOutboundAllocations(id, task.productId(), task.warehouseId(), location.id(), task.quantity());
 		outboundTaskRepository.assignLocation(id, zone.id(), location.id(), STATUS_WAIT_PICK);
 		syncOrderStatus(task.outboundOrderId());
 		return getOutboundTaskDetail(id);
@@ -165,6 +180,7 @@ public class OutboundTaskService {
 	@Transactional
 	public void confirmPick(Long id) {
 		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 
 		if (!Objects.equals(task.status(), STATUS_WAIT_PICK)
 				|| task.zoneId() == null
@@ -179,6 +195,7 @@ public class OutboundTaskService {
 	@Transactional
 	public void completeTask(Long id) {
 		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 
 		if (!Objects.equals(task.status(), STATUS_WAIT_OUTBOUND)
 				|| task.zoneId() == null
@@ -188,6 +205,7 @@ public class OutboundTaskService {
 
 		outboundTaskRepository.updateCompleted(id, STATUS_COMPLETED, LocalDateTime.now());
 		OutboundTaskEntity updatedTask = getExistingTask(id);
+		inventoryBatchService.consumeOutboundAllocations(updatedTask.id());
 		inventoryStockService.recordOutbound(updatedTask);
 		outboundRecordService.createRecord(updatedTask);
 		syncOrderStatus(task.outboundOrderId());
@@ -196,11 +214,13 @@ public class OutboundTaskService {
 	@Transactional
 	public void cancelTask(Long id) {
 		OutboundTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 
 		if (Objects.equals(task.status(), STATUS_COMPLETED) || Objects.equals(task.status(), STATUS_CANCELLED)) {
 			throw new BusinessException(CommonErrorCode.OUTBOUND_TASK_STATUS_INVALID);
 		}
 
+		inventoryBatchService.clearOutboundAllocations(id);
 		outboundTaskRepository.updateCancelled(id, STATUS_CANCELLED);
 		syncOrderStatus(task.outboundOrderId());
 	}

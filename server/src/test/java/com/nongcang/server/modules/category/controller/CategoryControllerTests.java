@@ -41,7 +41,9 @@ class CategoryControllerTests {
 				.andExpect(jsonPath("$.data[0].children[0].categoryCode").value("CAT-A01"))
 				.andExpect(jsonPath("$.data[0].children[0].defaultStorageConditionId").value("1"))
 				.andExpect(jsonPath("$.data[0].children[0].defaultStorageCondition").value("叶菜冷藏标准"))
-				.andExpect(jsonPath("$.data[0].children[0].defaultStorageType").value("冷藏"));
+				.andExpect(jsonPath("$.data[0].children[0].defaultStorageType").value("冷藏"))
+				.andExpect(jsonPath("$.data[0].children[0].shelfLifeDays").doesNotExist())
+				.andExpect(jsonPath("$.data[0].children[0].warningDays").doesNotExist());
 	}
 
 	@Test
@@ -56,8 +58,6 @@ class CategoryControllerTests {
 							  "sortOrder": 99,
 							  "status": 1,
 							  "defaultStorageConditionId": 1,
-							  "shelfLifeDays": 30,
-							  "warningDays": 5,
 							  "remarks": "接口测试"
 							}
 							"""))
@@ -68,7 +68,9 @@ class CategoryControllerTests {
 				.andExpect(jsonPath("$.data.categoryLevel").value(1))
 				.andExpect(jsonPath("$.data.defaultStorageConditionId").value("1"))
 				.andExpect(jsonPath("$.data.defaultStorageCondition").value("叶菜冷藏标准"))
-				.andExpect(jsonPath("$.data.defaultStorageType").value("冷藏"));
+				.andExpect(jsonPath("$.data.defaultStorageType").value("冷藏"))
+				.andExpect(jsonPath("$.data.shelfLifeDays").doesNotExist())
+				.andExpect(jsonPath("$.data.warningDays").doesNotExist());
 	}
 
 	@Test

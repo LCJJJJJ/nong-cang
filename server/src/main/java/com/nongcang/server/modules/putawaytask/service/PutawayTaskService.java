@@ -8,10 +8,13 @@ import java.util.Objects;
 
 import com.nongcang.server.common.exception.BusinessException;
 import com.nongcang.server.common.exception.CommonErrorCode;
+import com.nongcang.server.common.security.WarehouseAccessScopeService;
+import com.nongcang.server.modules.inboundrecord.domain.entity.InboundRecordEntity;
 import com.nongcang.server.modules.inboundorder.domain.entity.InboundOrderEntity;
 import com.nongcang.server.modules.inboundorder.domain.entity.InboundOrderItemEntity;
 import com.nongcang.server.modules.inboundorder.repository.InboundOrderRepository;
 import com.nongcang.server.modules.inboundrecord.service.InboundRecordService;
+import com.nongcang.server.modules.inventorysupport.service.InventoryBatchService;
 import com.nongcang.server.modules.inventorysupport.service.InventoryStockService;
 import com.nongcang.server.modules.putawaytask.domain.dto.PutawayAssignRequest;
 import com.nongcang.server.modules.putawaytask.domain.dto.PutawayTaskListQueryRequest;
@@ -45,7 +48,9 @@ public class PutawayTaskService {
 	private final WarehouseZoneRepository warehouseZoneRepository;
 	private final WarehouseLocationRepository warehouseLocationRepository;
 	private final InventoryStockService inventoryStockService;
+	private final InventoryBatchService inventoryBatchService;
 	private final InboundRecordService inboundRecordService;
+	private final WarehouseAccessScopeService warehouseAccessScopeService;
 
 	public PutawayTaskService(
 			PutawayTaskRepository putawayTaskRepository,
@@ -53,25 +58,33 @@ public class PutawayTaskService {
 			WarehouseZoneRepository warehouseZoneRepository,
 			WarehouseLocationRepository warehouseLocationRepository,
 			InventoryStockService inventoryStockService,
-			InboundRecordService inboundRecordService) {
+			InventoryBatchService inventoryBatchService,
+			InboundRecordService inboundRecordService,
+			WarehouseAccessScopeService warehouseAccessScopeService) {
 		this.putawayTaskRepository = putawayTaskRepository;
 		this.inboundOrderRepository = inboundOrderRepository;
 		this.warehouseZoneRepository = warehouseZoneRepository;
 		this.warehouseLocationRepository = warehouseLocationRepository;
 		this.inventoryStockService = inventoryStockService;
+		this.inventoryBatchService = inventoryBatchService;
 		this.inboundRecordService = inboundRecordService;
+		this.warehouseAccessScopeService = warehouseAccessScopeService;
 	}
 
 	public List<PutawayTaskListItemResponse> getPutawayTaskList(PutawayTaskListQueryRequest queryRequest) {
+		Long scopedWarehouseId = warehouseAccessScopeService.resolveQueryWarehouseId(queryRequest.warehouseId());
 		return putawayTaskRepository.findAll()
 				.stream()
+				.filter(entity -> scopedWarehouseId == null || Objects.equals(entity.warehouseId(), scopedWarehouseId))
 				.filter(entity -> matchesQuery(entity, queryRequest))
 				.map(this::toListItemResponse)
 				.toList();
 	}
 
 	public PutawayTaskDetailResponse getPutawayTaskDetail(Long id) {
-		return toDetailResponse(getExistingTask(id));
+		PutawayTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
+		return toDetailResponse(task);
 	}
 
 	@Transactional
@@ -112,6 +125,7 @@ public class PutawayTaskService {
 	@Transactional
 	public PutawayTaskDetailResponse assignLocation(Long id, PutawayAssignRequest request) {
 		PutawayTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 		ensureAssignable(task.status());
 
 		WarehouseZoneEntity zone = warehouseZoneRepository.findById(request.zoneId())
@@ -132,6 +146,7 @@ public class PutawayTaskService {
 	@Transactional
 	public void completeTask(Long id) {
 		PutawayTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 
 		if (!Objects.equals(task.status(), STATUS_WAIT_PUTAWAY)
 				|| task.zoneId() == null
@@ -142,7 +157,8 @@ public class PutawayTaskService {
 		putawayTaskRepository.updateStatus(id, STATUS_COMPLETED, LocalDateTime.now());
 		PutawayTaskEntity updatedTask = getExistingTask(id);
 		inventoryStockService.recordInbound(updatedTask);
-		inboundRecordService.createRecord(updatedTask);
+		InboundRecordEntity inboundRecord = inboundRecordService.createRecord(updatedTask);
+		inventoryBatchService.createInboundBatch(inboundRecord);
 
 		if (putawayTaskRepository.countOpenTasksByOrderId(task.inboundOrderId()) == 0) {
 			InboundOrderEntity order = inboundOrderRepository.findById(task.inboundOrderId())
@@ -154,6 +170,7 @@ public class PutawayTaskService {
 	@Transactional
 	public void cancelTask(Long id) {
 		PutawayTaskEntity task = getExistingTask(id);
+		warehouseAccessScopeService.assertWarehouseAccess(task.warehouseId());
 
 		if (Objects.equals(task.status(), STATUS_COMPLETED) || Objects.equals(task.status(), STATUS_CANCELLED)) {
 			throw new BusinessException(CommonErrorCode.PUTAWAY_TASK_STATUS_INVALID);
