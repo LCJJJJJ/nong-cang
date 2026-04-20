@@ -122,6 +122,18 @@ input {
   font: inherit;
 }
 
+[class$='__field'] input,
+[class$='__field'] select,
+[class$='__field'] textarea {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+[class$='__field'] span {
+  line-height: 1.3;
+}
+
 code {
   font-family: var(--mono);
   display: inline-flex;
