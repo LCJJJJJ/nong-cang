@@ -16,9 +16,6 @@ function LoginPage() {
   const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
-  const [submitMessage, setSubmitMessage] = useState(
-    '测试账号：admin / warehouse_admin / inventory_admin / quality_admin',
-  )
   const [submitError, setSubmitError] = useState<AppError | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -29,7 +26,6 @@ function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitError(null)
-    setSubmitMessage('')
     setIsSubmitting(true)
 
     try {
@@ -45,7 +41,6 @@ function LoginPage() {
     } catch (error) {
       const appError = normalizeError(error)
       setSubmitError(appError)
-      setSubmitMessage('')
     } finally {
       setIsSubmitting(false)
     }
@@ -131,12 +126,6 @@ function LoginPage() {
           <button className="login-page__submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? '登录中...' : '登 录'}
           </button>
-
-          {submitMessage && (
-            <p className="login-page__message login-page__message--info">
-              {submitMessage}
-            </p>
-          )}
 
           {submitError && (
             <div className="login-page__message login-page__message--error">

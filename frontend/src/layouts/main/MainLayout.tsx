@@ -16,7 +16,6 @@ type SidebarIconName =
   | 'inventory'
   | 'shield'
   | 'alert'
-  | 'chart'
 
 interface NavigationChildItem {
   label: string
@@ -124,10 +123,6 @@ const navigationSections: NavigationSection[] = [
       { label: '预警中心', path: '/alerts' },
       { label: '消息中心', path: '/message-notices' },
     ],
-  },
-  {
-    label: '统计分析与报表',
-    icon: 'chart',
   },
 ]
 
@@ -436,21 +431,6 @@ function MainLayout() {
           </div>
 
           <div className="main-layout__topbar-actions">
-            <button
-              type="button"
-              className="main-layout__icon-button"
-              aria-label="通知"
-            >
-              <TopbarIcon name="bell" />
-            </button>
-            <button
-              type="button"
-              className="main-layout__icon-button"
-              aria-label="设置"
-            >
-              <TopbarIcon name="settings" />
-            </button>
-
             <div className="main-layout__user">
               <div className="main-layout__avatar" aria-hidden="true">
                 <TopbarIcon name="avatar" />
@@ -514,8 +494,6 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
       'M12 2 5 5v6c0 4.55 3.05 8.8 7 10 3.95-1.2 7-5.45 7-10V5l-7-3Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z',
     alert:
       'M12 4 2 20h20L12 4Zm1 11h-2v-4h2v4Zm0 4h-2v-2h2v2Z',
-    chart:
-      'M5 19h14v2H3V5h2v14Zm2-4h2v4H7v-4Zm4-6h2v10h-2V9Zm4 3h2v7h-2v-7Z',
   }
 
   return (
@@ -527,12 +505,8 @@ function SidebarIcon({ name }: { name: SidebarIconName }) {
   )
 }
 
-function TopbarIcon({ name }: { name: 'bell' | 'settings' | 'avatar' }) {
-  const paths: Record<'bell' | 'settings' | 'avatar', string> = {
-    bell:
-      'M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm6-6v-5a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z',
-    settings:
-      'm19.14 12.94.04-.94-.04-.94 2.03-1.58-1.92-3.32-2.39.96a7.54 7.54 0 0 0-1.63-.94L14.96 2h-3.92l-.27 2.18c-.58.22-1.12.53-1.63.94l-2.39-.96L4.83 7.48l2.03 1.58-.04.94.04.94-2.03 1.58 1.92 3.32 2.39-.96c.5.41 1.05.72 1.63.94L11.04 22h3.92l.27-2.18c.58-.22 1.12-.53 1.63-.94l2.39.96 1.92-3.32-2.03-1.58ZM13 15h-2a3 3 0 1 1 2-6 3 3 0 0 1 0 6Z',
+function TopbarIcon({ name }: { name: 'avatar' }) {
+  const paths: Record<'avatar', string> = {
     avatar:
       'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z',
   }

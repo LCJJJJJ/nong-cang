@@ -232,23 +232,6 @@
   }
 }
 
-.main-layout__icon-button {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: rgba(25, 28, 29, 0.72);
-  cursor: pointer;
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: #191c1d;
-  }
-}
-
 .main-layout__user {
   display: flex;
   align-items: center;
